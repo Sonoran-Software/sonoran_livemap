@@ -29,7 +29,10 @@ AddEventHandler('SonoranCAD::pushevents:UnitUpdate', function(unit)
 end)
 
 registerApiType("GET_ACTIVE_UNITS", "emergency")
-AddEventHandler("onServerResourceStart", function()
+AddEventHandler("onServerResourceStart", function(resource)
+    if GetCurrentResourceName() ~= resource then
+        return
+    end
     local payload = { serverId = Config.serverId}
     performApiRequest({payload}, "GET_ACTIVE_UNITS", function(units)
         local allUnits = json.decode(units)
