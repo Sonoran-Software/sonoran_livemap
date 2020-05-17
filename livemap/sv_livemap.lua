@@ -37,7 +37,7 @@ AddEventHandler("onServerResourceStart", function(resource)
     performApiRequest({payload}, "GET_ACTIVE_UNITS", function(units)
         local allUnits = json.decode(units)
         for k, v in pairs(allUnits) do
-            print(json.encode(v))
+            debugLog(json.encode(v))
             local id = getPlayerSource(v.data.apidId1)
             if id ~= nil then
                 TriggerClientEvent('SonoranCAD::livemap::UnitAdd', id, v)
