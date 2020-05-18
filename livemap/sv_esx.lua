@@ -40,7 +40,7 @@ if Config.serverType == "esx" then
                 lastname = user['lastname'],
                 dateofbirth = user['dateofbirth'],
                 sex = user['sex'],
-                height = user['height']
+                height = user['height'],
                 job = user['job']
             }
         else
@@ -64,3 +64,4 @@ if Config.serverType == "esx" then
         end
         return false
     end
+end

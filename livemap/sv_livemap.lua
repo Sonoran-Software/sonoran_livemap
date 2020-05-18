@@ -34,7 +34,7 @@ RegisterServerEvent("SonoranCAD::livemap:IsPlayerTracked")
 AddEventHandler("SonoranCAD::livemap:IsPlayerTracked", function()
     local identifiers = GetIdentifiers(source)
     local primary = identifiers[Config.primaryIdentifier]
-for k, v in pairs(Active_Units) do
+    for k, v in pairs(Active_Units) do
         if v == primary then
             TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", source, true)
             debugLog(("Player is tracked: %s - %s returning TRUE"):format(targetPlayer,primary))
@@ -43,6 +43,7 @@ for k, v in pairs(Active_Units) do
     end
     TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", source, false)
     debugLog(("Player is NOT tracked: %s - %s returning FALSE"):format(targetPlayer,primary))
+end
 )
 
 -- Listener Event to recieve data from the API listener
@@ -89,7 +90,7 @@ AddEventHandler('SonoranCAD::pushevents:UnitUpdate', function(unit)
                 debugLog("Failed to get player source for apiID: " .. unit.data.apidId1)
             end
         end
-    else if unit.type == "EVENT_UNIT_LOGOUT" then
+    elseif unit.type == "EVENT_UNIT_LOGOUT" then
         if unit.data.apiId1 ~= nil then
             targetPlayer = getPlayerSource(unit.data.apiId1)
             if targetPlayer ~= nil then
