@@ -47,6 +47,23 @@ function updateData(name, value)
     playerBlipData[name] = value
 end
 
+-- Event to recieve requested IsTracked status
+local IsTracked = nil
+RegisterNetEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus")
+AddEventHandler("SonoranCAD::livemap:ReturnPlayerTrackStatus", funtion(status)
+    IsTracked = status
+end)
+
+-- Function to check if player's framwork job type is to be tracked on the live map
+function IsTrackedEmployee()
+    IsTracked = nil
+    TriggerServerEvent("SonoranCAD::livemap:IsPlayerTracked",)
+    while IsTracked == nil do
+        Wait(500)
+    end
+    return IsTracked
+end
+
 -- Listener event to update data on the websocket server with data from SonoranCAD
 RegisterNetEvent('SonoranCAD::pushevents:UnitUpdate')
 AddEventHandler('SonoranCAD::pushevents:UnitUpdate', function(unit)
@@ -93,7 +110,7 @@ function TriggerFirstSpawn(jobTriggered)
         end
         -- In framwork integration mode, check if player is a tracked job type as configured in config.json
         -- This limits only tracked jobs to be displayed on the livemap when in framework integrated mode
-        if (Config.serverType == 'esx' and IsTrackedEmployee()) or Config.serverType == 'standalone' then
+        if IsTrackedEmployee() then
             TriggerServerEvent("sonorancad:livemap:playerSpawned") -- Set's the ID in "playerData" so it will get sent via sockets
             -- Now send the default data set
             for key,val in pairs(playerBlipData) do
@@ -168,16 +185,6 @@ AddEventHandler("sonorancad:livemap:firstSpawn", function(jobTriggered)
     TriggerFirstSpawn(jobTriggered)
 end)
 
--- Function to check if player's framwork job type is to be tracked on the live map
-function IsTrackedEmployee()
-    for i,job in pairs(pluginConfig.jobsTracked) do
-        if PlayerData.job.name == job then
-            return true
-        end
-    end
-    return false
-end
-
 -- Function to change live map icons based on type of vehicle player is in, does not take in account addon/dlc vehicles
 function doIconUpdate()
     local ped = PlayerPedId()
@@ -239,7 +246,7 @@ Citizen.CreateThread(function()
         -- Only run if firstSpawn is not running
         if NetworkIsPlayerActive(PlayerId()) and not firstSpawn then
             -- Only run if player is in a framwork tracked job, track all players if in standalone mode
-            if Config.serverType == 'esx' and IsTrackedEmployee() then
+            if IsTrackedEmployee() then
                 -- Update position, if it has changed
                 local x,y,z = table.unpack(GetEntityCoords(PlayerPedId()))
                 local x1,y1,z1 = playerBlipData["pos"].x, playerBlipData["pos"].y, playerBlipData["pos"].z
@@ -253,23 +260,6 @@ Citizen.CreateThread(function()
 
                 doIconUpdate()
 
-                -- Make sure the updated data is up-to-date on socket server as well
-                for i,k in pairs(beenUpdated) do
-                    --Citizen.Trace("Updating " .. k)
-                    TriggerServerEvent("sonorancad:livemap:UpdatePlayerData", k, playerBlipData[k])
-                    table.remove(beenUpdated, i)
-                end
-            elseif Config.serverType == 'standalone' then
-                -- Update position, if it has changed
-                local x,y,z = table.unpack(GetEntityCoords(PlayerPedId()))
-                local x1,y1,z1 = playerBlipData["pos"].x, playerBlipData["pos"].y, playerBlipData["pos"].z
-
-                local dist = Vdist(x, y, z, x1, y1, z1)
-
-                if (dist >= 5) then
-                    -- Update every 5 meters.. Let's reduce the amount of spam
-                    updateData("pos", {x = x, y=y, z=z})
-                end
                 -- Make sure the updated data is up-to-date on socket server as well
                 for i,k in pairs(beenUpdated) do
                     --Citizen.Trace("Updating " .. k)

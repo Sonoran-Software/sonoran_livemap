@@ -28,7 +28,7 @@ if Config.serverType == "esx" then
     -- Helper function to get the ESX Identity object from your database
     function GetIdentity(target)
         local identifier = GetPlayerIdentifiers(target)[1]
-        local result = MySQL.Sync.fetchAll("SELECT firstname, lastname, sex, dateofbirth, height FROM users WHERE identifier = @identifier", {
+        local result = MySQL.Sync.fetchAll("SELECT firstname, lastname, sex, dateofbirth, height, job FROM users WHERE identifier = @identifier", {
                 ['@identifier'] = identifier
         })
         local returnData = nil
@@ -41,6 +41,7 @@ if Config.serverType == "esx" then
                 dateofbirth = user['dateofbirth'],
                 sex = user['sex'],
                 height = user['height']
+                job = user['job']
             }
         else
             return nil
@@ -53,4 +54,13 @@ if Config.serverType == "esx" then
         local returnData = GetIdentity(source)
         TriggerClientEvent('sonorancad:returnIdentity', source, returnData)
     end)
-end
+
+    function isTrackedEmployee(target)
+        local Identity = GetIdentity(target)
+        for i,job in pairs(pluginConfig.jobsTracked) do
+            if Identity.job == job then
+                return true
+            end
+        end
+        return false
+    end
