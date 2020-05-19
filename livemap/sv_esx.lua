@@ -16,52 +16,57 @@ You should have received a copy of the GNU General Public License
 along with this program in the file "LICENSE".  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
----------------------------------------------------------------------------
--- ESX Framework Integration
----------------------------------------------------------------------------
--- Request framework object to allow for requests for data
-ESX = nil
+local pluginConfig = Config.GetPluginConfig("livemap")
 
-if Config.serverType == "esx" then
-    TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+if pluginConfig.enabled then
+    ---------------------------------------------------------------------------
+    -- ESX Framework Integration
+    ---------------------------------------------------------------------------
+    -- Request framework object to allow for requests for data
+    ESX = nil
 
-    -- Helper function to get the ESX Identity object from your database
-    function GetIdentity(target)
-        local identifier = GetPlayerIdentifiers(target)[1]
-        local result = MySQL.Sync.fetchAll("SELECT firstname, lastname, sex, dateofbirth, height, job FROM users WHERE identifier = @identifier", {
-                ['@identifier'] = identifier
-        })
-        local returnData = nil
-        if result[1] ~= nil then
-            local user = result[1]
-        
-            return {
-                firstname = user['firstname'],
-                lastname = user['lastname'],
-                dateofbirth = user['dateofbirth'],
-                sex = user['sex'],
-                height = user['height'],
-                job = user['job']
-            }
-        else
-            return nil
-        end
-    end
+    if Config.serverType == "esx" then
+        TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-    -- Event for clients to request esx_identity information from the server
-    RegisterServerEvent('sonorancad:getIdentity')
-    AddEventHandler('sonorancad:getIdentity', function()
-        local returnData = GetIdentity(source)
-        TriggerClientEvent('sonorancad:returnIdentity', source, returnData)
-    end)
-
-    function isTrackedEmployee(target)
-        local Identity = GetIdentity(target)
-        for i,job in pairs(pluginConfig.jobsTracked) do
-            if Identity.job == job then
-                return true
+        -- Helper function to get the ESX Identity object from your database
+        function GetIdentity(target)
+            local identifier = GetPlayerIdentifiers(target)[1]
+            local result = MySQL.Sync.fetchAll("SELECT firstname, lastname, sex, dateofbirth, height, job FROM users WHERE identifier = @identifier", {
+                    ['@identifier'] = identifier
+            })
+            local returnData = nil
+            if result[1] ~= nil then
+                local user = result[1]
+            
+                return {
+                    firstname = user['firstname'],
+                    lastname = user['lastname'],
+                    dateofbirth = user['dateofbirth'],
+                    sex = user['sex'],
+                    height = user['height'],
+                    job = user['job']
+                }
+            else
+                return nil
             end
         end
-        return false
+
+        -- Event for clients to request esx_identity information from the server
+        RegisterServerEvent('sonorancad:getIdentity')
+        AddEventHandler('sonorancad:getIdentity', function()
+            local returnData = GetIdentity(source)
+            TriggerClientEvent('sonorancad:returnIdentity', source, returnData)
+        end)
+
+        function isTrackedEmployee(target)
+            local Identity = GetIdentity(target)
+            for i,job in pairs(pluginConfig.jobsTracked) do
+                if Identity.job == job then
+                    return true
+                end
+            end
+            return false
+        end
     end
+
 end
