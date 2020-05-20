@@ -22,6 +22,8 @@ along with this program in the file "LICENSE".  If not, see <http://www.gnu.org/
 -- Request framework object to allow for requests for data
 ESX = nil
 
+local pluginConfig = Config.plugins['livemap']
+
 if Config.serverType == "esx" then
     TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
@@ -57,7 +59,9 @@ if Config.serverType == "esx" then
 
     function isTrackedEmployee(target)
         local Identity = GetIdentity(target)
+        print("Got " .. Identity.job .. " for player " .. target)
         for i,job in pairs(pluginConfig.jobsTracked) do
+            print(Identity.job .. " - " .. job)
             if Identity.job == job then
                 return true
             end

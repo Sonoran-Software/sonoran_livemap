@@ -24,6 +24,9 @@ PlayerData = {}
 ESX = nil
 
 Citizen.CreateThread(function()
+    while Config.serverType == nil do
+        Wait(100)
+    end
     if Config.serverType ~= "esx" then
         return
     end
@@ -37,39 +40,49 @@ Citizen.CreateThread(function()
 	end
 
     PlayerData = ESX.GetPlayerData()
-end)
+    local pluginConfig = Config.plugins["livemap"]
 
-if Config.serverType == "esx" then
-    -- Listen for when new players load into the game
-    RegisterNetEvent('esx:playerLoaded')
-    AddEventHandler('esx:playerLoaded', function(xPlayer)
-    PlayerData = xPlayer
-    end)
-    -- Listen for when jobs are changed in esx_jobs
-    RegisterNetEvent('esx:setJob')
-    AddEventHandler('esx:setJob', function(job)
-    PlayerData.job = job
-    TriggerEvent('sonorancad:livemap:firstSpawn', true)
-    end)
-
-    -- Function to return esx_identity data on the client from server
-    -- This event listens for data from the server when requested
-    local recievedIdentity = false
-    returnedIdentity = nil
-    RegisterNetEvent('sonorancad:returnIdentity')
-    AddEventHandler('sonorancad:returnIdentity', function(data)
-        returnedIdentity = data
-        recievedIdentity = true
-    end)
-    -- This function requests data from the server
-    function GetIdentity(callback)
-        recievedIdentity = false
-        returnIdentity = false
-        TriggerServerEvent("sonorancad:getIdentity")
-        local timeStamp = GetGameTimer()
-        while not recievedIdentity do
-            Citizen.Wait(0)
+    print("serverType: " .. Config.serverType)
+    if Config.serverType == "esx" then
+        -- Listen for when new players load into the game
+        RegisterNetEvent('esx:playerLoaded')
+        AddEventHandler('esx:playerLoaded', function(xPlayer)
+        PlayerData = xPlayer
+        end)
+        -- Listen for when jobs are changed in esx_jobs
+        RegisterNetEvent('esx:setJob')
+        AddEventHandler('esx:setJob', function(job)
+        PlayerData.job = job
+        TriggerEvent('sonorancad:livemap:firstSpawn', true)
+        end)
+        -- Function to check if player's framwork job type is to be tracked on the live map
+        function IsTrackedEmployee()
+            for i,job in pairs(pluginConfig.jobsTracked) do
+                if PlayerData.job.name == job then
+                    return true
+                end
+            end
+            return false
         end
-        callback(returnedIdentity)
+        -- Function to return esx_identity data on the client from server
+        -- This event listens for data from the server when requested
+        local recievedIdentity = false
+        returnedIdentity = nil
+        RegisterNetEvent('sonorancad:returnIdentity')
+        AddEventHandler('sonorancad:returnIdentity', function(data)
+            returnedIdentity = data
+            recievedIdentity = true
+        end)
+        -- This function requests data from the server
+        function GetIdentity(callback)
+            recievedIdentity = false
+            returnIdentity = false
+            TriggerServerEvent("sonorancad:getIdentity")
+            local timeStamp = GetGameTimer()
+            while not recievedIdentity do
+                Citizen.Wait(0)
+            end
+            callback(returnedIdentity)
+        end
     end
-end
+end)
