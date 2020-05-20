@@ -16,15 +16,13 @@ You should have received a copy of the GNU General Public License
 along with this program in the file "LICENSE".  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-Citizen.CreateThread(function()
-    while Config.serverType == nil do
-        Wait(100)
-    end
-    ---------------------------------------------------------------------------
-    -- Client Data Processing for Live Map Blip
-    ---------------------------------------------------------------------------
-    -- Default blip datafields to be initialized and updated
-    local pluginConfig = Config.plugins["livemap"]
+---------------------------------------------------------------------------
+-- Client Data Processing for Live Map Blip
+---------------------------------------------------------------------------
+-- Default blip datafields to be initialized and updated
+local pluginConfig = Config.GetPluginConfig("livemap")
+
+if pluginConfig.enabled then
 
     local playerBlipData = {}
     local standalonePlayerBlipData = {

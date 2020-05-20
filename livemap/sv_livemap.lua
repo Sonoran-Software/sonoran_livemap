@@ -1,21 +1,25 @@
----------------------------------------------------------------------------
--- SonoranCAD Listener Event Handling (Recieves data from SonoranCAD)
----------------------------------------------------------------------------
--- Tracking of Active Units via SonoranCAD
-Active_Units = {}
+local pluginConfig = Config.GetPluginConfig("livemap")
 
--- Function to figure out the player server id from their steamHex
-function getPlayerSource(identifier)
-    local activePlayers = GetPlayers();
-    for i,player in pairs(activePlayers) do
-        local identifiers = GetIdentifiers(player)
-        local primary = identifiers[Config.primaryIdentifier]
-        debugLog(("Check %s has identifier %s"):format(player, primary))
-        if primary == string.lower(primary) then
-            return player
+if pluginConfig.enabled then
+
+    ---------------------------------------------------------------------------
+    -- SonoranCAD Listener Event Handling (Recieves data from SonoranCAD)
+    ---------------------------------------------------------------------------
+    -- Tracking of Active Units via SonoranCAD
+    Active_Units = {}
+
+    -- Function to figure out the player server id from their steamHex
+    function getPlayerSource(identifier)
+        local activePlayers = GetPlayers();
+        for i,player in pairs(activePlayers) do
+            local identifiers = GetIdentifiers(player)
+            local primary = identifiers[Config.primaryIdentifier]
+            debugLog(("Check %s has identifier %s"):format(player, primary))
+            if primary == string.lower(primary) then
+                return player
+            end
         end
     end
-end
 
 -- Function to remove variable from Active_Units array
 local function removeTrackedApiId(targetPlayer)
@@ -25,6 +29,7 @@ local function removeTrackedApiId(targetPlayer)
             debugLog(("Removed player: %s to Active_Units"):format(targetPlayer))
             break
         end
+        debugLog(("Failed to find apiID (%s) in Active_Unit list, this might be fine."):format(unit.data.apidId1))
     end
     debugLog(("Failed to find player %s in Active_Unit list, this might be fine."):format(targetPlayer))
 end
@@ -42,6 +47,8 @@ AddEventHandler("SonoranCAD::livemap:IsPlayerTracked", function()
             debugLog(("Player is tracked: %s - %s returning TRUE"):format(source,primary))
             IsTracked = true
         end
+        TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", source, false)
+        debugLog(("Player is NOT tracked: %s - %s returning FALSE"):format(targetPlayer,primary))
     end
     if not IsTracked then
         TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", source, false)
@@ -66,8 +73,7 @@ AddEventHandler('SonoranCAD::pushevents:UnitUpdate', function(unit)
                 debugLog("Failed to get player source for apiID: " .. unit.data.apidId1)
             end
         end
-    end
-end)
+    end)
 
 -- Listener Event to recieve data from the API listener
 RegisterServerEvent('SonoranCAD::pushevents:UnitListUpdate')
@@ -97,21 +103,7 @@ AddEventHandler('SonoranCAD::pushevents:UnitListUpdate', function(unit)
                 debugLog("Failed to get player source for apiID: " .. unit.data.apiId1)
             end
         end
-    end
-end)
-
-function dump(o)
-    if type(o) == 'table' then
-        local s = '{ '
-        for k,v in pairs(o) do
-        if type(k) ~= 'number' then k = '"'..k..'"' end
-        s = s .. '['..k..'] = ' .. dump(v) .. ','
-        end
-        return s .. '} '
-    else
-        return tostring(o)
-    end
-end
+    end)
 
 registerApiType("GET_ACTIVE_UNITS", "emergency")
 Citizen.CreateThread(function()
@@ -121,7 +113,6 @@ Citizen.CreateThread(function()
         performApiRequest({payload}, "GET_ACTIVE_UNITS", function(runits)
             local allUnits = json.decode(runits)
             for k, v in pairs(allUnits) do
-                print(json.encode(v))
                 local id = getPlayerSource(v.data.apidId1)
                 if id ~= nil then
                     table.insert( units,id )
