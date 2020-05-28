@@ -235,7 +235,7 @@ end
 ---------------------------------------------------------------------------
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(10)
+        Citizen.Wait(500)
         -- Only run if firstSpawn is not running
         if NetworkIsPlayerActive(PlayerId()) and not firstSpawn then
             -- Only run if player is in a framwork tracked job, track all players if in standalone mode
