@@ -70,8 +70,12 @@ Citizen.CreateThread(function()
             returnedIdentity = nil
             RegisterNetEvent('sonorancad:returnIdentity')
             AddEventHandler('sonorancad:returnIdentity', function(data)
-                returnedIdentity = data
                 recievedIdentity = true
+                if data.job == nil then
+                    print("Warning: no identity data was found.")
+                else
+                    returnedIdentity = data
+                end
             end)
             -- This function requests data from the server
             function GetIdentity(callback)

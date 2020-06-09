@@ -55,7 +55,11 @@ if pluginConfig.enabled then
         RegisterServerEvent('sonorancad:getIdentity')
         AddEventHandler('sonorancad:getIdentity', function()
             local returnData = GetIdentity(source)
-            TriggerClientEvent('sonorancad:returnIdentity', source, returnData)
+            if returnData ~= nil then
+                TriggerClientEvent('sonorancad:returnIdentity', source, returnData)
+            else
+                TriggerClientEvent('sonorancad:returnIdentity', source, {})
+            end
         end)
 
         function isTrackedEmployee(target)
