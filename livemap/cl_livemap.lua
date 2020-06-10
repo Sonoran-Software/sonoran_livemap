@@ -117,7 +117,7 @@ if pluginConfig.enabled then
             end
             -- In framwork integration mode, check if player is a tracked job type as configured in config.json
             -- This limits only tracked jobs to be displayed on the livemap when in framework integrated mode
-            if (Config.serverType == 'esx' and IsTrackedEmployee()) or Config.serverType == 'standalone' then
+            if (Config.serverType == 'esx' and IsTrackedUnit()) or Config.serverType == 'standalone' then
                 if IsTrackedUnit() then
                     TriggerServerEvent("sonorancad:livemap:playerSpawned") -- Set's the ID in "playerData" so it will get sent via sockets
                     -- Now send the default data set
@@ -258,7 +258,7 @@ if pluginConfig.enabled then
             -- Only run if firstSpawn is not running
             if NetworkIsPlayerActive(PlayerId()) and not firstSpawn then
                 -- Only run if player is in a framwork tracked job, track all players if in standalone mode
-                if Config.serverType == 'esx' and IsTrackedEmployee() then
+                if Config.serverType == 'esx' and IsTrackedUnit() then
                     if IsTrackedUnit() then
                         -- Update position, if it has changed
                         local x,y,z = table.unpack(GetEntityCoords(PlayerPedId()))
