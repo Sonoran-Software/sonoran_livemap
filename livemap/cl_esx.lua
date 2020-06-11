@@ -19,6 +19,9 @@ along with this program in the file "LICENSE".  If not, see <http://www.gnu.org/
 local pluginConfig = Config.GetPluginConfig("livemap")
 
 Citizen.CreateThread(function()
+    while Config.serverType == nil do
+        Wait(10)
+    end
     if pluginConfig.enabled then
         ---------------------------------------------------------------------------
         -- ESX Integration Initialization/Events/Functions

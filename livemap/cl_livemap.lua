@@ -23,7 +23,6 @@ along with this program in the file "LICENSE".  If not, see <http://www.gnu.org/
 local pluginConfig = Config.GetPluginConfig("livemap")
 
 if pluginConfig.enabled then
-
     local playerBlipData = {}
     local standalonePlayerBlipData = {
         ["pos"] = { x=0, y=0, z=0 },
@@ -156,7 +155,6 @@ if pluginConfig.enabled then
         end
         if playerBlipData['Status'] ~= data.status then
             local label = Config.statusLabels[data.status + 1]
-            print("label is "..tostring(label))
             updateData('Status', label)
         end
         if playerBlipData['name'] ~= unitDetail.name then
