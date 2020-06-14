@@ -143,6 +143,7 @@ if pluginConfig.enabled then
     Citizen.CreateThread(function()
         while true do
             local units = {}
+            Active_Units = {}
             local payload = { serverId = Config.serverId}
             lockedUnits = true
             performApiRequest({payload}, "GET_ACTIVE_UNITS", function(runits)
@@ -150,14 +151,14 @@ if pluginConfig.enabled then
                 for k, v in pairs(allUnits) do
                     local id = getPlayerSource(v.data.apiId1)
                     if id ~= nil then
-                        local search, index = getUnitByServerId(id)
-                        if not search then
-                            local unit = Unit.Create(id, v.data.apiId1)
-                            table.insert(Active_Units, unit)
-                        end
+                        local unit = Unit.Create(id, v.data.apiId1)
+                        table.insert(units, unit)
                     end
                 end
             end)
+            for i = 1, #units, 1 do
+                table.insert(Active_Units, units[i])
+            end
             lockedUnits = false
             Citizen.Wait(60000)
         end
