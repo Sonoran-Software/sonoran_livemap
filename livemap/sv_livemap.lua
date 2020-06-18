@@ -5,57 +5,56 @@ if pluginConfig.enabled then
     ---------------------------------------------------------------------------
     -- SonoranCAD Listener Event Handling (Recieves data from SonoranCAD)
     ---------------------------------------------------------------------------
-    -- Tracking of Active Units via SonoranCAD
-    local Unit = {
-        apiId = nil,
-        serverId = nil
-    }
-    function Unit.Create(serverId, apiId)
-        local self = shallowcopy(Unit)
-        debugLog(("create %s with %s"):format(serverId, apiId))
-        assert(apiId ~= nil, 'apiId required, but not supplied')
-        self.serverId = tostring(serverId)
-        self.apiId = apiId
-        return self
-    end
-    Active_Units = {}
-    local lockedUnits = false
-    local function getActiveUnits()
-        while lockedUnits do
-            Wait(10)
+    local ActiveUnits = {}
+
+    local function AddUnit(serverId, apiId)
+        serverId = tostring(serverId)
+        if ActiveUnits[apiId] == nil then
+            debugLog(("Adding unit %s with ApiId %s"):format(serverId, apiId))
+            ActiveUnits[apiId] = serverId
         end
-        return Active_Units
     end
-    local function getUnitByServerId(serverId)
-        for i = 1, #getActiveUnits(), 1 do
-            if getActiveUnits()[i].serverId == tostring(serverId) then
-                return getActiveUnits()[i], i
+    local function RemoveUnit(serverId)
+        serverId = tostring(serverId)
+        for k, v in pairs(ActiveUnits) do
+            if v == serverId then
+                debugLog(("Removing unit %s with ApiId %s"):format(serverId, k))
+                ActiveUnits[k] = nil
+                break
+            end
+        end
+    end
+    local function GetUnitByServerId(serverId)
+        serverId = tostring(serverId)
+        for k, v in pairs(ActiveUnits) do
+            if v == serverId then
+                return ActiveUnits[k]
             end
         end
         return nil
     end
-
-    -- Function to figure out the player server id from their steamHex
-    function getPlayerSource(identifier)
-        local activePlayers = GetPlayers();
-        for i,player in pairs(activePlayers) do
-            local identifiers = GetIdentifiers(player)
-            local primary = identifiers[Config.primaryIdentifier]
-            debugLog(("Check %s has identifier %s = %s"):format(player, primary, identifier))
-            if primary == identifier then
-                return player
-            end
+    local function GetUnitByApiId(apiId)
+        if ActiveUnits[apiId] ~= nil then
+            return ActiveUnits[apiId]
+        else
+            return nil
         end
     end
-
+    local function GetSourceByApiId(apiId)
+        for i = 0, GetNumPlayerIndices()-1, 1 do
+            identifiers = GetIdentifiers(GetPlayerFromIndex(i))
+            for k, v in pairs(identifiers) do
+                if v == apiId then
+                    return GetPlayerFromIndex(i)
+                end
+            end
+        end
+        return nil
+    end
     -- Function to remove variable from Active_Units array
     local function removeTrackedApiId(targetPlayer)
-        local search, index = getUnitByServerId(targetPlayer)
-        if search then
-            Active_Units[index] = nil
-            debugLog(("Removed player: %s from Active_Units"):format(targetPlayer))
-            TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", targetPlayer, false)
-            TriggerClientEvent("sonorancad:livemap:RemovePlayer", targetPlayer)
+        if GetUnitByServerId(targetPlayer) then
+            RemoveUnit(targetPlayer)
         else
             debugLog(("Failed to find player %s in Active_Unit list, this might be fine."):format(targetPlayer))
         end
@@ -64,15 +63,13 @@ if pluginConfig.enabled then
     -- Server Event to allow clients to check tracked status
     RegisterServerEvent("SonoranCAD::livemap:IsPlayerTracked")
     AddEventHandler("SonoranCAD::livemap:IsPlayerTracked", function()
-        local identifiers = GetIdentifiers(source)
-        local primary = identifiers[Config.primaryIdentifier]
-        local search, index = getUnitByServerId(source)
-        if search and search.apiId == primary then
+        local source = source
+        if GetUnitByServerId(source) then
             TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", source, true)
-            debugLog(("Player is tracked: %s - %s returning TRUE"):format(source,primary))
+            debugLog(("Player is tracked: %s returning TRUE"):format(source))
         else
             TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", source, false)
-            debugLog(("Player is NOT tracked: %s - %s returning FALSE"):format(source,primary))
+            debugLog(("Player is NOT tracked: %s returning FALSE"):format(source))
         end
     end)
 
@@ -84,14 +81,9 @@ if pluginConfig.enabled then
         debugLog("Got a unit update: "..tostring(json.encode(unit)))
         if unit.type == "EVENT_UNIT_STATUS" then
             if unit.data.apiId1 ~= nil then
-                targetPlayer = getPlayerSource(unit.data.apiId1)
+                targetPlayer = GetUnitByApiId(unit.data.apiId1)
                 if targetPlayer ~= nil then
-                    local search, index = getUnitByServerId(targetPlayer)
-                    if not search then
-                        local unitObj = Unit.Create(targetPlayer, unit.data.apiId1)
-                        table.insert(Active_Units, unitObj)
-                        TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", targetPlayer, true)
-                    end
+                    TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", targetPlayer, true)
                     TriggerClientEvent('SonoranCAD::pushevents:UnitUpdate', targetPlayer, unit)
                     debugLog(("Fired to %s with unit data %s"):format(targetPlayer, json.encode(unit)))
                 else
@@ -109,28 +101,22 @@ if pluginConfig.enabled then
         debugLog(("Got a %s unit: %s"):format(unit.type,tostring(json.encode(unit))))
         if unit.type == "EVENT_UNIT_LOGIN" then
             if unit.data.apiId1 ~= nil then
-                targetPlayer = getPlayerSource(unit.data.apiId1)
-                if targetPlayer ~= nil then
-                    local search, index = getUnitByServerId(targetPlayer)
-                    if not search then
-                        local unitObj = Unit.Create(targetPlayer, unit.data.apiId1)
-                        table.insert(Active_Units, unitObj)
-                        TriggerClientEvent('sonorancad:livemap:firstSpawn', targetPlayer, true)
-                        TriggerClientEvent('SonoranCAD::pushevents:UnitUpdate', targetPlayer, unit)
-                        TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", targetPlayer, true)
-                        debugLog(("Added player: %s - %s to Active_Units"):format(targetPlayer,unit.data.apiId1))
-                    else
-                        debugLog("Warning: skipped unit login for "..targetPlayer)
-                    end
-                else
-                    debugLog("Failed to get player source for apiID: " .. unit.data.apiId1)
+                targetPlayer = GetUnitByApiId(unit.data.apiId1)
+                if targetPlayer == nil then
+                    targetPlayer = GetSourceByApiId(unit.data.apiId1)
+                    AddUnit(targetPlayer, unit.data.apiId1)
                 end
+                TriggerClientEvent('sonorancad:livemap:firstSpawn', targetPlayer, true)
+                TriggerClientEvent('SonoranCAD::pushevents:UnitUpdate', targetPlayer, unit)
+                TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", targetPlayer, true)
+                debugLog(("Added player: %s - %s to Active_Units"):format(targetPlayer,unit.data.apiId1))
             end
         elseif unit.type == "EVENT_UNIT_LOGOUT" then
             if unit.data.apiId1 ~= nil then
-                targetPlayer = getPlayerSource(unit.data.apiId1)
+                targetPlayer = GetUnitByApiId(unit.data.apiId1)
                 if targetPlayer ~= nil then
                     removeTrackedApiId(targetPlayer)
+                    RemoveUnit(targetPlayer)
                     TriggerClientEvent('sonorancad:livemap:firstSpawn', targetPlayer, true)
                 else
                     debugLog("Failed to get player source for apiID: " .. unit.data.apiId1)
@@ -139,27 +125,34 @@ if pluginConfig.enabled then
         end
     end)
 
+    AddEventHandler("playerDropped", function()
+        RemoveUnit(source)
+    end)
+
     registerApiType("GET_ACTIVE_UNITS", "emergency")
     Citizen.CreateThread(function()
+        local OldUnits = {}
+        for k, v in pairs(ActiveUnits) do
+            OldUnits[k] = v
+        end
         while true do
-            local units = {}
-            Active_Units = {}
             local payload = { serverId = Config.serverId}
-            lockedUnits = true
             performApiRequest({payload}, "GET_ACTIVE_UNITS", function(runits)
                 local allUnits = json.decode(runits)
                 for k, v in pairs(allUnits) do
-                    local id = getPlayerSource(v.data.apiId1)
-                    if id ~= nil then
-                        local unit = Unit.Create(id, v.data.apiId1)
-                        table.insert(units, unit)
+                    local playerId = GetSourceByApiId(v.data.apiId1)
+                    if playerId then
+                        AddUnit(playerId, v.data.apiId1)
+                        if OldUnits[v.data.apiId1] ~= nil then
+                            OldUnits[v.data.apiId1] = nil
+                        end
                     end
                 end
+                for k, v in pairs(OldUnits) do
+                    debugLog(("Removing player %s (API ID: %s), not on units list"):format(k, v))
+                    RemoveUnit(v)
+                end
             end)
-            for i = 1, #units, 1 do
-                table.insert(Active_Units, units[i])
-            end
-            lockedUnits = false
             Citizen.Wait(60000)
         end
     end)

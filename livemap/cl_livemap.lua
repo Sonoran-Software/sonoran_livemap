@@ -58,8 +58,6 @@ if pluginConfig.enabled then
     -- Function to check if player's framwork job type is to be tracked on the live map
     local LastTrackedResult = false
     function IsTrackedUnit()
-        LastTrackedResult = IsTracked
-        IsTracked = nil
         TriggerServerEvent("SonoranCAD::livemap:IsPlayerTracked")
         while IsTracked == nil do
             Wait(500)
