@@ -22,7 +22,7 @@ Citizen.CreateThread(function()
     while Config.serverType == nil do
         Wait(10)
     end
-    if pluginConfig.enabled then
+    if pluginConfig.enabled and Config.serverType == "esx" then
         ---------------------------------------------------------------------------
         -- ESX Integration Initialization/Events/Functions
         ---------------------------------------------------------------------------
@@ -31,9 +31,6 @@ Citizen.CreateThread(function()
         ESX = nil
 
         Citizen.CreateThread(function()
-            if Config.serverType ~= "esx" then
-                return
-            end
             while ESX == nil do
                 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
                 Citizen.Wait(10)
@@ -46,51 +43,40 @@ Citizen.CreateThread(function()
             PlayerData = ESX.GetPlayerData()
         end)
 
-        if Config.serverType == "esx" then
             -- Listen for when new players load into the game
-            RegisterNetEvent('esx:playerLoaded')
-            AddEventHandler('esx:playerLoaded', function(xPlayer)
-            PlayerData = xPlayer
-            end)
-            -- Listen for when jobs are changed in esx_jobs
-            RegisterNetEvent('esx:setJob')
-            AddEventHandler('esx:setJob', function(job)
-            PlayerData.job = job
-            TriggerEvent('sonorancad:livemap:firstSpawn', true)
-            end)
-            -- Function to check if player's framwork job type is to be tracked on the live map
-            function IsTrackedEmployee()
-                for i,job in pairs(pluginConfig.jobsTracked) do
-                    if PlayerData.job.name == job then
-                        return true
-                    end
-                end
-                return false
+        RegisterNetEvent('esx:playerLoaded')
+        AddEventHandler('esx:playerLoaded', function(xPlayer)
+        PlayerData = xPlayer
+        end)
+        -- Listen for when jobs are changed in esx_jobs
+        RegisterNetEvent('esx:setJob')
+        AddEventHandler('esx:setJob', function(job)
+        PlayerData.job = job
+        TriggerEvent('sonorancad:livemap:firstSpawn', true)
+        end)
+        -- Function to return esx_identity data on the client from server
+        -- This event listens for data from the server when requested
+        local recievedIdentity = false
+        returnedIdentity = nil
+        RegisterNetEvent('sonorancad:returnIdentity')
+        AddEventHandler('sonorancad:returnIdentity', function(data)
+            recievedIdentity = true
+            if data.job == nil then
+                print("Warning: no identity data was found.")
+            else
+                returnedIdentity = data
             end
-            -- Function to return esx_identity data on the client from server
-            -- This event listens for data from the server when requested
-            local recievedIdentity = false
-            returnedIdentity = nil
-            RegisterNetEvent('sonorancad:returnIdentity')
-            AddEventHandler('sonorancad:returnIdentity', function(data)
-                recievedIdentity = true
-                if data.job == nil then
-                    print("Warning: no identity data was found.")
-                else
-                    returnedIdentity = data
-                end
-            end)
-            -- This function requests data from the server
-            function GetIdentity(callback)
-                recievedIdentity = false
-                returnIdentity = false
-                TriggerServerEvent("sonorancad:getIdentity")
-                local timeStamp = GetGameTimer()
-                while not recievedIdentity do
-                    Citizen.Wait(0)
-                end
-                callback(returnedIdentity)
+        end)
+        -- This function requests data from the server
+        function GetIdentity(callback)
+            recievedIdentity = false
+            returnIdentity = false
+            TriggerServerEvent("sonorancad:getIdentity")
+            local timeStamp = GetGameTimer()
+            while not recievedIdentity do
+                Citizen.Wait(0)
             end
+            callback(returnedIdentity)
         end
     end
 end)

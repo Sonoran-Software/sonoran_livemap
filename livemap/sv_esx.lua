@@ -61,17 +61,5 @@ if pluginConfig.enabled then
                 TriggerClientEvent('sonorancad:returnIdentity', source, {})
             end
         end)
-
-        function isTrackedEmployee(target)
-            local Identity = GetIdentity(target)
-            print("Got " .. Identity.job .. " for player " .. target)
-            for i,job in pairs(pluginConfig.jobsTracked) do
-                print(Identity.job .. " - " .. job)
-                if Identity.job == job then
-                    return true
-                end
-                return false
-            end
-        end
     end
 end

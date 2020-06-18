@@ -116,13 +116,11 @@ if pluginConfig.enabled then
             end
             -- In framwork integration mode, check if player is a tracked job type as configured in config.json
             -- This limits only tracked jobs to be displayed on the livemap when in framework integrated mode
-            if (Config.serverType == 'esx' and IsTrackedEmployee()) or Config.serverType == 'standalone' then
-                if IsTrackedUnit() then
-                    TriggerServerEvent("sonorancad:livemap:playerSpawned") -- Set's the ID in "playerData" so it will get sent via sockets
-                    -- Now send the default data set
-                    for key,val in pairs(playerBlipData) do
-                        TriggerServerEvent("sonorancad:livemap:AddPlayerData", key, val)
-                    end
+            if IsTrackedUnit() then
+                TriggerServerEvent("sonorancad:livemap:playerSpawned") -- Set's the ID in "playerData" so it will get sent via sockets
+                -- Now send the default data set
+                for key,val in pairs(playerBlipData) do
+                    TriggerServerEvent("sonorancad:livemap:AddPlayerData", key, val)
                 end
             end
             -- Set inital name if steamHex is not defined in SonoranCAD
@@ -256,46 +254,25 @@ if pluginConfig.enabled then
             -- Only run if firstSpawn is not running
             if NetworkIsPlayerActive(PlayerId()) and not firstSpawn then
                 -- Only run if player is in a framwork tracked job, track all players if in standalone mode
-                if Config.serverType == 'esx' and IsTrackedEmployee() then
-                    if IsTrackedUnit() then
-                        -- Update position, if it has changed
-                        local x,y,z = table.unpack(GetEntityCoords(PlayerPedId()))
-                        local x1,y1,z1 = playerBlipData["pos"].x, playerBlipData["pos"].y, playerBlipData["pos"].z
-        
-                        local dist = Vdist(x, y, z, x1, y1, z1)
-        
-                        if (dist >= 5) then
-                            -- Update every 5 meters.. Let's reduce the amount of spam
-                            updateData("pos", {x = x, y=y, z=z})
-                        end
-        
-                        doIconUpdate()
-        
-                        -- Make sure the updated data is up-to-date on socket server as well
-                        for i,k in pairs(beenUpdated) do
-                            --Citizen.Trace("Updating " .. k)
-                            TriggerServerEvent("sonorancad:livemap:UpdatePlayerData", k, playerBlipData[k])
-                            table.remove(beenUpdated, i)
-                        end
+                if IsTrackedUnit() then
+                    -- Update position, if it has changed
+                    local x,y,z = table.unpack(GetEntityCoords(PlayerPedId()))
+                    local x1,y1,z1 = playerBlipData["pos"].x, playerBlipData["pos"].y, playerBlipData["pos"].z
+    
+                    local dist = Vdist(x, y, z, x1, y1, z1)
+    
+                    if (dist >= 5) then
+                        -- Update every 5 meters.. Let's reduce the amount of spam
+                        updateData("pos", {x = x, y=y, z=z})
                     end
-                elseif Config.serverType == 'standalone' then
-                    if IsTrackedUnit() then
-                        -- Update position, if it has changed
-                        local x,y,z = table.unpack(GetEntityCoords(PlayerPedId()))
-                        local x1,y1,z1 = playerBlipData["pos"].x, playerBlipData["pos"].y, playerBlipData["pos"].z
-        
-                        local dist = Vdist(x, y, z, x1, y1, z1)
-        
-                        if (dist >= 5) then
-                            -- Update every 5 meters.. Let's reduce the amount of spam
-                            updateData("pos", {x = x, y=y, z=z})
-                        end
-                        -- Make sure the updated data is up-to-date on socket server as well
-                        for i,k in pairs(beenUpdated) do
-                            --Citizen.Trace("Updating " .. k)
-                            TriggerServerEvent("sonorancad:livemap:UpdatePlayerData", k, playerBlipData[k])
-                            table.remove(beenUpdated, i)
-                        end
+    
+                    doIconUpdate()
+    
+                    -- Make sure the updated data is up-to-date on socket server as well
+                    for i,k in pairs(beenUpdated) do
+                        --Citizen.Trace("Updating " .. k)
+                        TriggerServerEvent("sonorancad:livemap:UpdatePlayerData", k, playerBlipData[k])
+                        table.remove(beenUpdated, i)
                     end
                 end
             end
