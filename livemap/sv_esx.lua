@@ -52,8 +52,9 @@ if pluginConfig.enabled then
         end
 
         -- Event for clients to request esx_identity information from the server
-        RegisterServerEvent('sonorancad:getIdentity')
+        RegisterNetEvent('sonorancad:getIdentity')
         AddEventHandler('sonorancad:getIdentity', function()
+            local source = source
             local returnData = GetIdentity(source)
             if returnData ~= nil then
                 TriggerClientEvent('sonorancad:returnIdentity', source, returnData)
