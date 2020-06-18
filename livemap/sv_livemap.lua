@@ -64,13 +64,12 @@ if pluginConfig.enabled then
     RegisterServerEvent("SonoranCAD::livemap:IsPlayerTracked")
     AddEventHandler("SonoranCAD::livemap:IsPlayerTracked", function()
         local source = source
-        local primary = GetIdentifiers()[1]
         if GetUnitByServerId(source) then
             TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", source, true)
-            debugLog(("Player is tracked: %s - %s returning TRUE"):format(source,primary))
+            debugLog(("Player is tracked: %s returning TRUE"):format(source))
         else
             TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", source, false)
-            debugLog(("Player is NOT tracked: %s - %s returning FALSE"):format(source,primary))
+            debugLog(("Player is NOT tracked: %s returning FALSE"):format(source))
         end
     end)
 
