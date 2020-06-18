@@ -41,11 +41,14 @@ if pluginConfig.enabled then
         end
     end
     local function GetSourceByApiId(apiId)
-        for i = 0, GetNumPlayerIndices()-1, 1 do
-            identifiers = GetIdentifiers(GetPlayerFromIndex(i))
-            for k, v in pairs(identifiers) do
-                if v == apiId then
-                    return GetPlayerFromIndex(i)
+        for i=0, GetNumPlayerIndices()-1 do
+            local player = GetPlayerFromIndex(i)
+            if player then
+                identifiers = GetIdentifiers(player)
+                for k, v in pairs(identifiers) do
+                    if v == apiId then
+                        return player
+                    end
                 end
             end
         end
