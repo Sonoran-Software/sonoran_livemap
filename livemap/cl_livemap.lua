@@ -63,7 +63,10 @@ if pluginConfig.enabled then
             Wait(500)
         end
         if LastTrackedResult ~= IsTracked then
-            TriggerServerEvent('sonorancad:livemap:RemovePlayer')
+            if not IsTracked then
+                TriggerServerEvent('sonorancad:livemap:RemovePlayer')
+            end
+            LastTrackedResult = IsTracked
         end
         return IsTracked
     end
