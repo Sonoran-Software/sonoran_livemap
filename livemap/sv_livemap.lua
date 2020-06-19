@@ -107,7 +107,9 @@ if pluginConfig.enabled then
                 targetPlayer = GetUnitByApiId(unit.data.apiId1)
                 if targetPlayer == nil then
                     targetPlayer = GetSourceByApiId(unit.data.apiId1)
-                    AddUnit(targetPlayer, unit.data.apiId1)
+                    if targetPlayer then
+                        AddUnit(targetPlayer, unit.data.apiId1)
+                    end
                 end
                 TriggerClientEvent('sonorancad:livemap:firstSpawn', targetPlayer, true)
                 TriggerClientEvent('SonoranCAD::pushevents:UnitUpdate', targetPlayer, unit)
