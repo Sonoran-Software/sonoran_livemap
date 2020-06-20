@@ -109,6 +109,9 @@ if pluginConfig.enabled then
                     targetPlayer = GetSourceByApiId(unit.data.apiId1)
                     if targetPlayer then
                         AddUnit(targetPlayer, unit.data.apiId1)
+                    else
+                        errorLog(("Failed to add unit (API ID: %s), could not locate identifier on server."):format(unit.data.apiId1))
+                        return
                     end
                 end
                 TriggerClientEvent('sonorancad:livemap:firstSpawn', targetPlayer, true)
