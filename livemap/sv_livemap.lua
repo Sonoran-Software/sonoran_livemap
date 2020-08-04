@@ -41,6 +41,10 @@ if pluginConfig.enabled then
         end
     end
     local function GetSourceByApiId(apiId)
+        if string.find(apiId, ":") then
+            local split = stringsplit(apiId, ":")
+            apiId = split[2]
+        end
         for i=0, GetNumPlayerIndices()-1 do
             local player = GetPlayerFromIndex(i)
             if player then
