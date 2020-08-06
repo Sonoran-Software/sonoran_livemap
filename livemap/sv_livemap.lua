@@ -41,6 +41,9 @@ if pluginConfig.enabled then
         end
     end
     local function GetSourceByApiId(apiId)
+        if apiId == nil then
+            return nil
+        end
         if string.find(apiId, ":") then
             local split = stringsplit(apiId, ":")
             apiId = split[2]
