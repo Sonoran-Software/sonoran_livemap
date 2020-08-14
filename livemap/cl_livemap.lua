@@ -129,7 +129,12 @@ if pluginConfig.enabled then
             -- Set inital name if steamHex is not defined in SonoranCAD
             if Config.serverType == 'esx' then
                 GetIdentity(function(esxIdentity)
-                    updateData("name", esxIdentity.firstname .. ' ' .. esxIdentity.lastname)
+                    if esxIdentity ~= nil then
+                        updateData("name", esxIdentity.firstname .. ' ' .. esxIdentity.lastname)
+                    else
+                        debugLog("Failed to get ESX identity, falling back to name")
+                        updateData("name", GetPlayerName(PlayerId()))
+                    end
                 end)
             elseif Config.serverType == 'standalone' then
                 updateData("name", GetPlayerName(PlayerId()))
