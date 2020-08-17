@@ -30,7 +30,7 @@ if pluginConfig.enabled then
 
         -- Helper function to get the ESX Identity object from your database
         function GetIdentity(target)
-            local identifier = GetPlayerIdentifiers(target)[1]
+            local identifier = GetIdentifiers(target)[Config.primaryIdentifier]
             local result = MySQL.Sync.fetchAll("SELECT firstname, lastname, sex, dateofbirth, height, job FROM users WHERE identifier = @identifier", {
                     ['@identifier'] = identifier
             })
