@@ -154,12 +154,14 @@ if pluginConfig.enabled then
             local payload = { serverId = Config.serverId}
             performApiRequest({payload}, "GET_ACTIVE_UNITS", function(runits)
                 local allUnits = json.decode(runits)
-                for k, v in pairs(allUnits) do
-                    local playerId = GetSourceByApiId(v.data.apiId1)
-                    if playerId then
-                        AddUnit(playerId, v.data.apiId1)
-                        if OldUnits[v.data.apiId1] ~= nil then
-                            OldUnits[v.data.apiId1] = nil
+                if allUnits ~= nil then
+                    for k, v in pairs(allUnits) do
+                        local playerId = GetSourceByApiId(v.data.apiId1)
+                        if playerId then
+                            AddUnit(playerId, v.data.apiId1)
+                            if OldUnits[v.data.apiId1] ~= nil then
+                                OldUnits[v.data.apiId1] = nil
+                            end
                         end
                     end
                 end
