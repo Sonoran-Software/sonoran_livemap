@@ -253,6 +253,7 @@ if pluginConfig.enabled then
     ---------------------------------------------------------------------------
     -- Main thread that checks for data updates and updates server
     ---------------------------------------------------------------------------
+    local livemapDebug = true
     Citizen.CreateThread(function()
         while not Config.serverType do
             Wait(10)
@@ -280,10 +281,21 @@ if pluginConfig.enabled then
                     for i,k in pairs(beenUpdated) do
                         --Citizen.Trace("Updating " .. k)
                         TriggerServerEvent("sonorancad:livemap:UpdatePlayerData", k, playerBlipData[k])
+                        if livemapDebug and playerBlipData[k] ~= nil then
+                            if k == "pos" then
+                                print(("UpdatePlayerData: %s %s"):format(k, json.encode(playerBlipData[k])))
+                            else
+                                print(("UpdatePlayerData: %s %s"):format(k, playerBlipData[k]))
+                            end
+                        end
                         table.remove(beenUpdated, i)
                     end
                 end
             end
         end
+    end)
+    RegisterCommand("livemapdebug", function(source, args, rawCommand)
+        livemapDebug = not livemapDebug
+        print("toggled")
     end)
 end
