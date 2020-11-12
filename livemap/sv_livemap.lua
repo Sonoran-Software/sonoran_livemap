@@ -76,10 +76,10 @@ if pluginConfig.enabled then
         local source = source
         if GetUnitByServerId(source) then
             TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", source, true)
-            debugLog(("Player is tracked: %s returning TRUE"):format(source))
+            --debugLog(("Player is tracked: %s returning TRUE"):format(source))
         else
             TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", source, false)
-            debugLog(("Player is NOT tracked: %s returning FALSE"):format(source))
+            --debugLog(("Player is NOT tracked: %s returning FALSE"):format(source))
         end
     end)
 
@@ -117,7 +117,7 @@ if pluginConfig.enabled then
                     if targetPlayer then
                         AddUnit(targetPlayer, unit.data.apiId1)
                     else
-                        errorLog(("Failed to add unit (API ID: %s), could not locate identifier on server."):format(unit.data.apiId1))
+                        errorLog(("Failed to add unit (API ID: %s), they should log into the CAD before joining the server."):format(unit.data.apiId1))
                         return
                     end
                 end
