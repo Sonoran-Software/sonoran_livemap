@@ -117,7 +117,6 @@ if pluginConfig.enabled then
                     if targetPlayer then
                         AddUnit(targetPlayer, unit.data.apiId1)
                     else
-                        errorLog(("Failed to add unit (API ID: %s), they should log into the CAD before joining the server."):format(unit.data.apiId1))
                         return
                     end
                 end
@@ -151,25 +150,27 @@ if pluginConfig.enabled then
             OldUnits[k] = v
         end
         while true do
-            local payload = { serverId = Config.serverId}
-            performApiRequest({payload}, "GET_ACTIVE_UNITS", function(runits)
-                local allUnits = json.decode(runits)
-                if allUnits ~= nil then
-                    for k, v in pairs(allUnits) do
-                        local playerId = GetSourceByApiId(v.data.apiId1)
-                        if playerId then
-                            AddUnit(playerId, v.data.apiId1)
-                            if OldUnits[v.data.apiId1] ~= nil then
-                                OldUnits[v.data.apiId1] = nil
+            if GetNumPlayerIndices() > 0 then
+                local payload = { serverId = Config.serverId}
+                performApiRequest({payload}, "GET_ACTIVE_UNITS", function(runits)
+                    local allUnits = json.decode(runits)
+                    if allUnits ~= nil then
+                        for k, v in pairs(allUnits) do
+                            local playerId = GetSourceByApiId(v.data.apiId1)
+                            if playerId then
+                                AddUnit(playerId, v.data.apiId1)
+                                if OldUnits[v.data.apiId1] ~= nil then
+                                    OldUnits[v.data.apiId1] = nil
+                                end
                             end
                         end
                     end
-                end
-                for k, v in pairs(OldUnits) do
-                    debugLog(("Removing player %s (API ID: %s), not on units list"):format(k, v))
-                    RemoveUnit(v)
-                end
-            end)
+                    for k, v in pairs(OldUnits) do
+                        debugLog(("Removing player %s (API ID: %s), not on units list"):format(k, v))
+                        RemoveUnit(v)
+                    end
+                end)
+            end
             Citizen.Wait(60000)
         end
     end)
