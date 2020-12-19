@@ -23,6 +23,7 @@ along with this program in the file "LICENSE".  If not, see <http://www.gnu.org/
 local pluginConfig = Config.GetPluginConfig("livemap")
 
 if pluginConfig.enabled then
+    isCallerForEmergency = false
     local playerBlipData = {}
     local standalonePlayerBlipData = {
         ["pos"] = { x=0, y=0, z=0 },

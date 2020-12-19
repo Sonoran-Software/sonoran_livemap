@@ -7,6 +7,8 @@ if pluginConfig.enabled then
     ---------------------------------------------------------------------------
     local ActiveUnits = {}
 
+    function getMapActiveUnits() return ActiveUnits end
+
     local function AddUnit(serverId, apiId)
         serverId = tostring(serverId)
         if ActiveUnits[apiId] == nil then
