@@ -49,6 +49,10 @@ if pluginConfig.enableCallerBlips and pluginConfig.enabled then
         local dispatchType = data.dispatch_type
         local dispatchData = data.dispatch
         local metaData = data.dispatch.metaData
+        if metaData == nil then
+            warnLog("Expected some metadata from this call, but it was nil. Is your callcommands plugin updated, or is your custom function not passing needed data? Ignoring!")
+            return
+        end
         if dispatchType == "CALL_NEW" then
             local originalId = metaData.origin911 ~= nil and metaData.origin911 or metaData.createdFromId
             -- new call, check if it was created from dispatch screen
