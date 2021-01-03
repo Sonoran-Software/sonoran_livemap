@@ -108,15 +108,10 @@ if pluginConfig.enabled then
     function TriggerFirstSpawn(jobTriggered)
         -- only run when first spawned into the world or when job is changed in the framework integration
         if firstSpawn then
-            -- Checks Config.serverType framework integrated or standalone and sets the default data set based on option set
-            if Config.serverType == 'standalone' then
-                playerBlipData = standalonePlayerBlipData
-            elseif Config.serverType == 'esx' then
+            if isPluginLoaded('esxsupport') then
                 playerBlipData = esxPlayerBlipData
-                -- waits to see if framework data is initialized before moving on
-                while PlayerData == {} do
-                    Citizen.SetTimeout(10)
-                end
+            else
+                playerBlipData = standalonePlayerBlipData
             end
             -- In framwork integration mode, check if player is a tracked job type as configured in config.json
             -- This limits only tracked jobs to be displayed on the livemap when in framework integrated mode
@@ -128,7 +123,7 @@ if pluginConfig.enabled then
                 end
             end
             -- Set inital name if steamHex is not defined in SonoranCAD
-            if Config.serverType == 'esx' then
+            if isPluginLoaded('esxsupport') then
                 GetIdentity(function(esxIdentity)
                     if esxIdentity ~= nil then
                         updateData("name", esxIdentity.firstname .. ' ' .. esxIdentity.lastname)
@@ -137,7 +132,7 @@ if pluginConfig.enabled then
                         updateData("name", GetPlayerName(PlayerId()))
                     end
                 end)
-            elseif Config.serverType == 'standalone' then
+            else
                 updateData("name", GetPlayerName(PlayerId()))
             end
 
@@ -284,9 +279,9 @@ if pluginConfig.enabled then
                         TriggerServerEvent("sonorancad:livemap:UpdatePlayerData", k, playerBlipData[k])
                         if livemapDebug and playerBlipData[k] ~= nil then
                             if k == "pos" then
-                                print(("UpdatePlayerData: %s %s"):format(k, json.encode(playerBlipData[k])))
+                                debugLog(("UpdatePlayerData: %s %s"):format(k, json.encode(playerBlipData[k])))
                             else
-                                print(("UpdatePlayerData: %s %s"):format(k, playerBlipData[k]))
+                                debugLog(("UpdatePlayerData: %s %s"):format(k, playerBlipData[k]))
                             end
                         end
                         table.remove(beenUpdated, i)
