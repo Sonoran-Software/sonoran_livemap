@@ -52,28 +52,10 @@ if pluginConfig.enabled then
 
     -- Event to recieve requested IsTracked status
     local IsTracked = nil
-    RegisterNetEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus")
-    AddEventHandler("SonoranCAD::livemap:ReturnPlayerTrackStatus", function(status)
+    RegisterNetEvent("SonoranCAD::livemap:PlayerIsTracked")
+    AddEventHandler("SonoranCAD::livemap:PlayerIsTracked", function(status)
         IsTracked = status
     end)
-
-    -- Function to check if player's framwork job type is to be tracked on the live map
-    local LastTrackedResult = false
-    function IsTrackedUnit()
-        TriggerServerEvent("SonoranCAD::livemap:IsPlayerTracked")
-        while IsTracked == nil do
-            Wait(500)
-        end
-        if LastTrackedResult ~= IsTracked then
-            if not IsTracked then
-                TriggerServerEvent('sonorancad:livemap:RemovePlayer')
-            else
-                TriggerServerEvent("sonorancad:livemap:playerSpawned")
-            end
-            LastTrackedResult = IsTracked
-        end
-        return IsTracked
-    end
 
     -- Listener event to update data on the websocket server with data from SonoranCAD
     RegisterNetEvent('SonoranCAD::pushevents:UnitUpdate')
@@ -85,7 +67,6 @@ if pluginConfig.enabled then
         end
         if playerBlipData['Status'] ~= unit.status then
             local label = Config.statusLabels[unit.status + 1]
-            print("label is "..tostring(label))
             updateData('Status', label)
         end
         if playerBlipData['name'] ~= unitDetail.name then
@@ -251,7 +232,7 @@ if pluginConfig.enabled then
     ---------------------------------------------------------------------------
     -- Main thread that checks for data updates and updates server
     ---------------------------------------------------------------------------
-    local livemapDebug = true
+    local livemapDebug = false
     Citizen.CreateThread(function()
         while not Config.primaryIdentifier do
             Wait(10)
@@ -281,9 +262,9 @@ if pluginConfig.enabled then
                         TriggerServerEvent("sonorancad:livemap:UpdatePlayerData", k, playerBlipData[k])
                         if livemapDebug and playerBlipData[k] ~= nil then
                             if k == "pos" then
-                                debugLog(("UpdatePlayerData: %s %s"):format(k, json.encode(playerBlipData[k])))
+                                print(("UpdatePlayerData: %s %s"):format(k, json.encode(playerBlipData[k])))
                             else
-                                debugLog(("UpdatePlayerData: %s %s"):format(k, playerBlipData[k]))
+                                print(("UpdatePlayerData: %s %s"):format(k, playerBlipData[k]))
                             end
                         end
                         table.remove(beenUpdated, i)
