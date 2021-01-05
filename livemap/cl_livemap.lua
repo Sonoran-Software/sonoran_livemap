@@ -45,6 +45,7 @@ if pluginConfig.enabled then
     local beenUpdated =  {}
     -- Update the data and queue the key to be updated on the websocket server
     function updateData(name, value)
+        debugLog(("[livemap] updateData %s = %s"):format(name, value))
         table.insert(beenUpdated, name)
         playerBlipData[name] = value
     end
@@ -137,6 +138,7 @@ if pluginConfig.enabled then
             end
 
             firstSpawn = false
+            debugLog("Player blip initialized")
             Citizen.Wait(100)
         else
             -- Allow framework job changes to reset player's blip and recheck if they should be checked, useful for duty scripts and character changes
@@ -251,7 +253,7 @@ if pluginConfig.enabled then
     ---------------------------------------------------------------------------
     local livemapDebug = true
     Citizen.CreateThread(function()
-        while not Config.serverType do
+        while not Config.primaryIdentifier do
             Wait(10)
         end
         while true do

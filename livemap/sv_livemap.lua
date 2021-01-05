@@ -11,6 +11,7 @@ if pluginConfig.enabled then
 
     local function AddUnit(serverId, apiId)
         serverId = tostring(serverId)
+        TriggerClientEvent("SonoranCAD::livemap:PlayerIsTracked", serverId, true)
         if ActiveUnits[apiId] == nil then
             debugLog(("Adding unit %s with ApiId %s"):format(serverId, apiId))
             ActiveUnits[apiId] = serverId
@@ -18,6 +19,7 @@ if pluginConfig.enabled then
     end
     local function RemoveUnit(serverId)
         serverId = tostring(serverId)
+        TriggerClientEvent("SonoranCAD::livemap:PlayerIsTracked", serverId, false)
         for k, v in pairs(ActiveUnits) do
             if v == serverId then
                 debugLog(("Removing unit %s with ApiId %s"):format(serverId, k))
@@ -71,19 +73,6 @@ if pluginConfig.enabled then
             debugLog(("Failed to find player %s in Active_Unit list, this might be fine."):format(targetPlayer))
         end
     end
-
-    -- Server Event to allow clients to check tracked status
-    RegisterServerEvent("SonoranCAD::livemap:IsPlayerTracked")
-    AddEventHandler("SonoranCAD::livemap:IsPlayerTracked", function()
-        local source = source
-        if GetUnitByServerId(source) then
-            TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", source, true)
-            --debugLog(("Player is tracked: %s returning TRUE"):format(source))
-        else
-            TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", source, false)
-            --debugLog(("Player is NOT tracked: %s returning FALSE"):format(source))
-        end
-    end)
 
     -- Listener Event to recieve data from the API listener
     RegisterServerEvent('SonoranCAD::pushevents:UnitUpdate')
