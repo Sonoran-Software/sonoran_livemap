@@ -23,6 +23,7 @@ along with this program in the file "LICENSE".  If not, see <http://www.gnu.org/
 local pluginConfig = Config.GetPluginConfig("livemap")
 
 if pluginConfig.enabled then
+    local firstSpawn = true
     isCallerForEmergency = false
     local playerBlipData = {}
     local standalonePlayerBlipData = {
@@ -54,8 +55,13 @@ if pluginConfig.enabled then
     local IsTracked = nil
     RegisterNetEvent("SonoranCAD::livemap:PlayerIsTracked")
     AddEventHandler("SonoranCAD::livemap:PlayerIsTracked", function(status)
+        debugLog("Tracked status: "..tostring(status))
         IsTracked = status
     end)
+
+    local function IsTrackedUnit()
+        return IsTracked
+    end
 
     -- Listener event to update data on the websocket server with data from SonoranCAD
     RegisterNetEvent('SonoranCAD::pushevents:UnitUpdate')
@@ -86,12 +92,15 @@ if pluginConfig.enabled then
         to be sent via sockets. Wait for the server to send framwork integration data
         and configuration necessary to initialize the livemap integration.
     ]]
-    local firstSpawn = true
+    
     function TriggerFirstSpawn(jobTriggered)
+        print("in first spawn "..tostring(jobTriggered))
         -- only run when first spawned into the world or when job is changed in the framework integration
         if firstSpawn then
+            debugLog("Initalizing player blip...")
             if isPluginLoaded('esxsupport') then
                 playerBlipData = esxPlayerBlipData
+                Wait(1000) -- wait for ESX
             else
                 playerBlipData = standalonePlayerBlipData
             end
@@ -108,7 +117,14 @@ if pluginConfig.enabled then
             if isPluginLoaded('esxsupport') then
                 GetIdentity(function(esxIdentity)
                     if esxIdentity ~= nil then
-                        updateData("name", esxIdentity.firstname .. ' ' .. esxIdentity.lastname)
+                        if esxIdentity.firstName ~= nil and esxIdentity.lastName ~= nil then
+                            updateData("name", (esxIdentity.firstName or "")..' '..(esxIdentity.lastName) or "")
+                        elseif esxIdentity.name ~= nil then
+                            updateData("name", esxIdentity.name)
+                        else
+                            print(("name failed: %s %s"):format(esxIdentity.firstName, esxIdentity.lastName))
+                            updateData("name", GetPlayerName(PlayerId()))
+                        end
                     else
                         debugLog("Failed to get ESX identity, falling back to name")
                         updateData("name", GetPlayerName(PlayerId()))
@@ -167,8 +183,10 @@ if pluginConfig.enabled then
     end)
 
     -- Listener event for inital player spawn
-    RegisterNetEvent("playerSpawned")
-    AddEventHandler("playerSpawned", function(spawn)
+    CreateThread(function()
+        while not NetworkIsPlayerActive(PlayerId()) do
+            Wait(10)
+        end
         TriggerFirstSpawn(false)
     end)
     -- Listener event to allow for framwork jobs to refresh player blip
@@ -269,12 +287,20 @@ if pluginConfig.enabled then
                         end
                         table.remove(beenUpdated, i)
                     end
+                else
+                    if livemapDebug then
+                        print("not tracked: "..tostring(IsTrackedUnit()))
+                    end
+                end
+            else
+                if livemapDebug then
+                    print("firstSpawn: "..tostring(firstSpawn))
                 end
             end
         end
     end)
     RegisterCommand("livemapdebug", function(source, args, rawCommand)
         livemapDebug = not livemapDebug
-        print("toggled")
+        print("toggled "..tostring(livemapDebug))
     end)
 end

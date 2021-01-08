@@ -37,27 +37,35 @@ if pluginConfig.enabled then
         end
         return nil
     end
-    local function GetUnitByApiId(apiId)
-        if ActiveUnits[apiId] ~= nil then
-            return ActiveUnits[apiId]
+    local function GetUnitByApiId(apiId1, apiId2)
+        if ActiveUnits[apiId1] ~= nil then
+            return ActiveUnits[apiId1]
+        elseif apiId2 ~= nil and ActiveUnits[apiId2] ~= nil then
+            return ActiveUnits[apiId2]
         else
             return nil
         end
     end
-    local function GetSourceByApiId(apiId)
-        if apiId == nil then
+    local function GetSourceByApiId(apiId1, apiId2)
+        if apiId1 == nil then
             return nil
         end
-        if string.find(apiId, ":") then
-            local split = stringsplit(apiId, ":")
-            apiId = split[2]
+        if string.find(apiId1, ":") then
+            local split = stringsplit(apiId1, ":")
+            apiId1 = split[2]
+        end
+        if apiId2 ~= nil then
+            if string.find(apiId2, ":") then
+                local split = stringsplit(apiId2, ":")
+                apiId2 = split[2]
+            end
         end
         for i=0, GetNumPlayerIndices()-1 do
             local player = GetPlayerFromIndex(i)
             if player then
                 identifiers = GetIdentifiers(player)
                 for k, v in pairs(identifiers) do
-                    if v == apiId then
+                    if v == apiId1 or (apiId2 ~= nil and v == apiId2) then
                         return player
                     end
                 end
@@ -104,7 +112,7 @@ if pluginConfig.enabled then
             if unit.data.apiId1 ~= nil then
                 targetPlayer = GetUnitByApiId(unit.data.apiId1)
                 if targetPlayer == nil then
-                    targetPlayer = GetSourceByApiId(unit.data.apiId1)
+                    targetPlayer = GetSourceByApiId(unit.data.apiId1, unit.data.apiId2)
                     if targetPlayer then
                         AddUnit(targetPlayer, unit.data.apiId1)
                     else
@@ -147,7 +155,7 @@ if pluginConfig.enabled then
                     local allUnits = json.decode(runits)
                     if allUnits ~= nil then
                         for k, v in pairs(allUnits) do
-                            local playerId = GetSourceByApiId(v.data.apiId1)
+                            local playerId = GetSourceByApiId(v.data.apiId1, v.data.apiId2)
                             if playerId then
                                 AddUnit(playerId, v.data.apiId1)
                                 if OldUnits[v.data.apiId1] ~= nil then
