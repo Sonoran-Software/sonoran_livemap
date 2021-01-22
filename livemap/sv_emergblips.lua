@@ -12,8 +12,8 @@ if pluginConfig.enableCallerBlips and pluginConfig.enabled then
 
     AddEventHandler("SonoranCAD::pushevents:IncomingCadCall", function(call, apiIds)
         if call.metaData ~= nil then
-            if call.metaData.callerPlayerId ~= nil then
-                CurrentCalls[call.callId] = { location = call.location, description = call.description, source = call.metaData.callerPlayerId, identifier = call.metaData.callerApiId }
+            if call.metaData.callerApiId ~= nil then
+                CurrentCalls[call.callId] = { location = call.location, description = call.description, source = call.metaData.callerApiId, identifier = call.metaData.callerApiId }
                 TriggerClientEvent("SonoranCAD::livemap:Emergency", call.metaData.callerPlayerId, call.caller, useBlip, useColor, "Emergency Call", call.description)
                 TriggerClientEvent("SonoranCAD::livemap:GetCurrentLocation", call.metaData.callerPlayerId, call.description) 
             else
