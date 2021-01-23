@@ -39,7 +39,7 @@ if pluginConfig.enableCallerBlips and pluginConfig.enabled then
     AddEventHandler("SonoranCAD::livemap:CurrentLocation", function(coords, description)
         local source = source
         for k, serverId in pairs(getMapActiveUnits()) do
-            TriggerClientEvent("SonoranCADD::livemap:AddCallBlip", serverId, coords, useBlip, useColor, description, source)
+            TriggerClientEvent("SonoranCAD::livemap:AddCallBlip", serverId, coords, useBlip, useColor, description, source)
         end
         debugLog("Got location")
     end)
