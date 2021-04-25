@@ -37,36 +37,24 @@ if pluginConfig.enabled then
         end
         return nil
     end
-    local function GetUnitByApiId(apiId1, apiId2)
-        if ActiveUnits[apiId1] ~= nil then
-            return ActiveUnits[apiId1]
-        elseif apiId2 ~= nil and ActiveUnits[apiId2] ~= nil then
-            return ActiveUnits[apiId2]
-        else
-            return nil
-        end
-    end
-    local function GetSourceByApiId(apiId1, apiId2)
-        if apiId1 == nil then
-            return nil
-        end
-        if string.find(apiId1, ":") then
-            local split = stringsplit(apiId1, ":")
-            apiId1 = split[2]
-        end
-        if apiId2 ~= nil then
-            if string.find(apiId2, ":") then
-                local split = stringsplit(apiId2, ":")
-                apiId2 = split[2]
+    local function GetUnitByApiId(apiIds)
+        for x=1, #apiIds do
+            if ActiveUnits[apiIds[x]] ~= nil then
+                return ActiveUnits[apiIds[x]]
             end
         end
-        for i=0, GetNumPlayerIndices()-1 do
-            local player = GetPlayerFromIndex(i)
-            if player then
-                identifiers = GetIdentifiers(player)
-                for k, v in pairs(identifiers) do
-                    if v == apiId1 or (apiId2 ~= nil and v == apiId2) then
-                        return player
+        return nil
+    end
+    local function GetSourceByApiId(apiIds)
+        for x=1, #apiIds do
+            for i=0, GetNumPlayerIndices()-1 do
+                local player = GetPlayerFromIndex(i)
+                if player then
+                    local identifiers = GetIdentifiers(player)
+                    for type, id in pairs(identifiers) do
+                        if id == apiIds[x] then
+                            return player
+                        end
                     end
                 end
             end
@@ -84,57 +72,42 @@ if pluginConfig.enabled then
 
     -- Listener Event to recieve data from the API listener
     RegisterServerEvent('SonoranCAD::pushevents:UnitUpdate')
-    AddEventHandler('SonoranCAD::pushevents:UnitUpdate', function(unit)
+    AddEventHandler('SonoranCAD::pushevents:UnitUpdate', function(ids, status)
         -- Strip the secret SonoranCAD API Key before passing data to clients
-        unit.key = nil
-        debugLog("Got a unit update: "..tostring(json.encode(unit)))
-        if unit.type == "EVENT_UNIT_STATUS" then
-            if unit.data.apiId1 ~= nil then
-                targetPlayer = GetUnitByApiId(unit.data.apiId1)
-                if targetPlayer ~= nil then
-                    TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", targetPlayer, true)
-                    TriggerClientEvent('SonoranCAD::pushevents:UnitUpdate', targetPlayer, unit)
-                    debugLog(("Fired to %s with unit data %s"):format(targetPlayer, json.encode(unit)))
-                else
-                    debugLog("Failed to get player source for apiID: " .. unit.data.apiId1)
-                end
+        local player = GetSourceByApiId(ids)
+        if player then
+            local unit = GetUnitByServerId(player)
+            if unit then
+                TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", targetPlayer, true)
+                TriggerClientEvent('SonoranCAD::pushevents:UnitUpdate', targetPlayer, status)
             end
         end
     end)
 
-    -- Listener Event to recieve data from the API listener
-    RegisterServerEvent('SonoranCAD::pushevents:UnitListUpdate')
-    AddEventHandler('SonoranCAD::pushevents:UnitListUpdate', function(unit)
-        -- Strip the secret SonoranCAD API Key before processing
-        unit.key = nil
-        debugLog(("Got a %s unit: %s"):format(unit.type,tostring(json.encode(unit))))
-        if unit.type == "EVENT_UNIT_LOGIN" then
-            if unit.data.apiId1 ~= nil then
-                targetPlayer = GetUnitByApiId(unit.data.apiId1)
-                if targetPlayer == nil then
-                    targetPlayer = GetSourceByApiId(unit.data.apiId1, unit.data.apiId2)
-                    if targetPlayer then
-                        AddUnit(targetPlayer, unit.data.apiId1)
-                    else
-                        return
-                    end
-                end
-                TriggerClientEvent('sonorancad:livemap:firstSpawn', targetPlayer, true)
-                TriggerClientEvent('SonoranCAD::pushevents:UnitUpdate', targetPlayer, unit)
-                TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", targetPlayer, true)
-                debugLog(("Added player: %s - %s to Active_Units"):format(targetPlayer,unit.data.apiId1))
-            end
-        elseif unit.type == "EVENT_UNIT_LOGOUT" then
-            if unit.data.apiId1 ~= nil then
-                targetPlayer = GetUnitByApiId(unit.data.apiId1)
-                if targetPlayer ~= nil then
-                    removeTrackedApiId(targetPlayer)
-                    RemoveUnit(targetPlayer)
-                    TriggerClientEvent('sonorancad:livemap:firstSpawn', targetPlayer, true)
-                else
-                    debugLog("Failed to get player source for apiID: " .. unit.data.apiId1)
-                end
-            end
+    RegisterServerEvent('SonoranCAD::pushevents:UnitLogin')
+    AddEventHandler('SonoranCAD::pushevents:UnitLogin', function(unit, isDispatch)
+        local player = GetSourceByApiId(unit.apiIds)
+        if player then
+            local mapId = GetIdentifiers(player)[Config.primaryIdentifier]
+            AddUnit(player, mapId)
+            TriggerClientEvent('sonorancad:livemap:firstSpawn', player, true)
+            TriggerClientEvent('SonoranCAD::pushevents:UnitLogin', targetPlayer, unit)
+            TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", targetPlayer, true)
+            debugLog(("Added player: %s - %s to Active_Units"):format(targetPlayer,mapId))
+        else
+            debugLog("Unable to find API ID?")
+        end
+    end)
+
+    RegisterServerEvent('SonoranCAD::pushevents:UnitLogout')
+    AddEventHandler('SonoranCAD::pushevents:UnitLogout', function(apiIds)
+        local targetPlayer = GetSourceByApiId(unit.apiIds)
+        if targetPlayer then
+            removeTrackedApiId(targetPlayer)
+            RemoveUnit(targetPlayer)
+            TriggerClientEvent('sonorancad:livemap:firstSpawn', targetPlayer, true)
+        else
+            debugLog("Unknown unit in logout event")
         end
     end)
 
@@ -155,11 +128,12 @@ if pluginConfig.enabled then
                     local allUnits = json.decode(runits)
                     if allUnits ~= nil then
                         for k, v in pairs(allUnits) do
-                            local playerId = GetSourceByApiId(v.data.apiId1, v.data.apiId2)
+                            local playerId = GetSourceByApiId(v.data.apiIds)
                             if playerId then
-                                AddUnit(playerId, v.data.apiId1)
-                                if OldUnits[v.data.apiId1] ~= nil then
-                                    OldUnits[v.data.apiId1] = nil
+                                local mapId = GetIdentifiers(playerId)[Config.primaryIdentifier]
+                                AddUnit(playerId, mapId)
+                                if OldUnits[mapId] ~= nil then
+                                    OldUnits[mapId] = nil
                                 end
                             end
                         end
