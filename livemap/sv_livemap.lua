@@ -60,7 +60,7 @@ if pluginConfig.enabled then
             end
         end
         return nil
-    end
+    end 
     -- Function to remove variable from Active_Units array
     local function removeTrackedApiId(targetPlayer)
         if GetUnitByServerId(targetPlayer) then
