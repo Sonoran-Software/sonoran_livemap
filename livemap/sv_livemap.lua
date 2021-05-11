@@ -13,6 +13,7 @@ if pluginConfig.enabled then
     end)
 
     local function GetSourceByApiId(apiIds)
+        if apiIds == nil then return nil end
         for x=1, #apiIds do
             for i=0, GetNumPlayerIndices()-1 do
                 local player = GetPlayerFromIndex(i)
@@ -38,6 +39,8 @@ if pluginConfig.enabled then
             if unit then
                 TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", player, true)
                 TriggerClientEvent('SonoranCAD::pushevents:UnitUpdate', player, status)
+            else
+                debugLog("Unable to find unit? Cache: "..json.encode(GetUnitCache()))
             end
         end
     end)
@@ -50,7 +53,7 @@ if pluginConfig.enabled then
             TriggerClientEvent('SonoranCAD::pushevents:UnitLogin', player, unit)
             TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", player, true)
         else
-            debugLog("Unable to find API ID?")
+            debugLog("Unable to find API ID? Got: "..json.encode(unit))
         end
     end)
 
