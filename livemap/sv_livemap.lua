@@ -5,11 +5,11 @@ if pluginConfig.enabled then
     RegisterServerEvent("SonoranCAD::core:AddPlayer")
     RegisterServerEvent("SonoranCAD::core:RemovePlayer")
     AddEventHandler("SonoranCAD::core:AddPlayer", function(playerId, unit)
-        TriggerClientEvent("SonoranCAD::livemap:PlayerIsTracked", serverId, true)
+        TriggerClientEvent("SonoranCAD::livemap:PlayerIsTracked", playerId, true)
     end)
 
     AddEventHandler("SonoranCAD::core:RemovePlayer", function(playerId, unit)
-        TriggerClientEvent("SonoranCAD::livemap:PlayerIsTracked", serverId, false)
+        TriggerClientEvent("SonoranCAD::livemap:PlayerIsTracked", playerId, false)
     end)
 
     local function GetSourceByApiId(apiIds)
