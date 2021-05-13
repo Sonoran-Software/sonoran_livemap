@@ -29,7 +29,6 @@ if pluginConfig.enabled then
         end
         return nil
     end 
-
     -- Listener Event to recieve data from the API listener
     RegisterServerEvent('SonoranCAD::pushevents:UnitUpdate')
     AddEventHandler('SonoranCAD::pushevents:UnitUpdate', function(ids, status)
@@ -39,6 +38,7 @@ if pluginConfig.enabled then
             if unit then
                 TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", player, true)
                 TriggerClientEvent('SonoranCAD::pushevents:UnitUpdate', player, status)
+                TriggerClientEvent("SonoranCAD::livemap:UnitAdd", player, unit)
             else
                 debugLog("Unable to find unit? Cache: "..json.encode(GetUnitCache()))
             end
@@ -52,6 +52,7 @@ if pluginConfig.enabled then
             TriggerClientEvent('sonorancad:livemap:firstSpawn', player, true)
             TriggerClientEvent('SonoranCAD::pushevents:UnitLogin', player, unit)
             TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", player, true)
+            TriggerClientEvent("SonoranCAD::livemap:UnitAdd", player, unit)
         else
             debugLog("Unable to find API ID? Got: "..json.encode(unit))
         end

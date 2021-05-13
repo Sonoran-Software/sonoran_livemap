@@ -1,6 +1,10 @@
 local pluginConfig = Config.GetPluginConfig("livemap")
 
 if pluginConfig.enableCallerBlips and pluginConfig.enabled then
+    if true then
+        -- temporarily disable, needs reworkign
+        return
+    end
     if not isPluginLoaded("callcommands") then
         warnLog("[livemap] The callcommands plugin is required for the blips feature.")
         return

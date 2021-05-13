@@ -29,17 +29,14 @@ if pluginConfig.enabled then
     local standalonePlayerBlipData = {
         ["pos"] = { x=0, y=0, z=0 },
         ["icon"] = 6, -- Curent player blip id
-        ["iconcolor"] = 0, -- Blip Color
         ["name"] = "NOT SET"
     }
     local esxPlayerBlipData = {
         ["pos"] = { x=0, y=0, z=0 },
         ["icon"] = 6, -- Curent player blip id
-        ["iconcolor"] = 0, -- Blip Color, Used to show job type
         ["name"] = "NOT SET",
         ["Unit Number"] = "0",
-        ["Status"] = "UNAVALIABLE",
-        ["Call Assignment"] = "UNASSIGNED"
+        ["Status"] = "UNAVAILABLE"
     }
 
     -- Table to keep track of the updated data
@@ -68,19 +65,22 @@ if pluginConfig.enabled then
     AddEventHandler('SonoranCAD::pushevents:UnitUpdate', function(unit)
         -- check for changes in the data from the last set value and update changes
         local unitDetail = unit.data
-        if playerBlipData['Unit Number'] ~= unitDetail.unitNum then
+        if playerBlipData['unitNum'] ~= unitDetail.unitNum then
             updateData('Unit Number', unitDetail.unitNum)
         end
-        if playerBlipData['Status'] ~= unit.status then
+        if playerBlipData['status'] ~= unit.status then
             local label = Config.statusLabels[unit.status + 1]
             updateData('Status', label)
         end
         if playerBlipData['name'] ~= unitDetail.name then
-            updateData('name', unitDetail.name)
+            updateData('Name', unitDetail.name)
+        end
+        if playerBlipData['department'] ~= unitDetail.department then
+            updateData('Department', unitDetail.department)
         end
 
         -- As mentioned in the API documentation data.callStatus is not always sent, only when it is changed. This will only update when it is sent
-        if unit.callStatus ~= '' then
+        if unit.callStatus ~= '' and playerBlipData['Call Assignment'] ~= nil then
             if playerBlipData['Call Assignment'] ~= unit.callStatus then
                 updateData('Call Assignment', unit.callStatus)
             end
@@ -147,14 +147,14 @@ if pluginConfig.enabled then
         end
     end
 
-    RegisterNetEvent("SonoranCAD::livemap::UnitAdd")
-    AddEventHandler("SonoranCAD::livemap::UnitAdd", function(data)
+    RegisterNetEvent("SonoranCAD::livemap:UnitAdd")
+    AddEventHandler("SonoranCAD::livemap:UnitAdd", function(data)
         TriggerServerEvent("sonorancad:livemap:playerSpawned")
         local unitDetail = data.data
-        if playerBlipData['Unit Number'] ~= unitDetail.unitNum then
+        if playerBlipData['unitNum'] ~= unitDetail.unitNum then
             updateData('Unit Number', unitDetail.unitNum)
         end
-        if playerBlipData['Status'] ~= data.status then
+        if playerBlipData['status'] ~= data.status then
             local label = Config.statusLabels[data.status + 1]
             updateData('Status', label)
         end
