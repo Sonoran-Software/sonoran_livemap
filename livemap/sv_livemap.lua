@@ -2,15 +2,7 @@ local pluginConfig = Config.GetPluginConfig("livemap")
 
 if pluginConfig.enabled then
 
-    RegisterServerEvent("SonoranCAD::core:AddPlayer")
-    RegisterServerEvent("SonoranCAD::core:RemovePlayer")
-    AddEventHandler("SonoranCAD::core:AddPlayer", function(playerId, unit)
-        TriggerClientEvent("SonoranCAD::livemap:PlayerIsTracked", playerId, true)
-    end)
-
-    AddEventHandler("SonoranCAD::core:RemovePlayer", function(playerId, unit)
-        TriggerClientEvent("SonoranCAD::livemap:PlayerIsTracked", playerId, false)
-    end)
+    local TrackedPlayers = {}
 
     local function GetSourceByApiId(apiIds)
         if apiIds == nil then return nil end
@@ -29,52 +21,42 @@ if pluginConfig.enabled then
         end
         return nil
     end 
-    -- Listener Event to recieve data from the API listener
-    RegisterServerEvent('SonoranCAD::pushevents:UnitUpdate')
-    AddEventHandler('SonoranCAD::pushevents:UnitUpdate', function(ids, status)
-        local player = GetSourceByApiId(ids)
-        if player then
-            local unit = GetUnitByPlayerId(player)
-            if unit then
-                TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", player, true)
-                TriggerClientEvent('SonoranCAD::pushevents:UnitUpdate', player, status)
-                TriggerClientEvent("SonoranCAD::livemap:UnitAdd", player, unit)
-            else
-                debugLog("Unable to find unit? Cache: "..json.encode(GetUnitCache()))
+
+    CreateThread(function()
+        while true do
+            Wait(pluginConfig.refreshTimer)
+            for i=0, GetNumPlayerIndices()-1 do
+                local player = GetPlayerFromIndex(i)
+                local unit = GetUnitCache()[GetUnitByPlayerId(player)]
+                if unit then
+                    if TrackedPlayers[player] == nil then
+                        TriggerClientEvent("SonoranCAD::livemap:AddPlayer", player, unit)
+                    end
+                    TrackedPlayers[player] = unit
+                elseif not pluginConfig.hideNonUnits then
+                    if TrackedPlayers[player] == nil then
+                        TriggerClientEvent("SonoranCAD::livemap:AddPlayer", player, { id = 0 })
+                    end
+                    TrackedPlayers[player] = { id = 0 }
+                else
+                    if TrackedPlayers[player] ~= nil then
+                        TrackedPlayers[player] = nil
+                        TriggerClientEvent("SonoranCAD::livemap:RemovePlayer", player)
+                        debugLog(("Unit %s no longer tracked %s"):format(player, json.encode(unit)))
+                    end
+                end
             end
         end
     end)
-
-    RegisterServerEvent('SonoranCAD::pushevents:UnitLogin')
-    AddEventHandler('SonoranCAD::pushevents:UnitLogin', function(unit, isDispatch)
+    -- Listener Event to recieve data from the API listener
+    RegisterServerEvent('SonoranCAD::pushevents:UnitUpdate')
+    AddEventHandler('SonoranCAD::pushevents:UnitUpdate', function(unit, status)
         local player = GetSourceByApiId(unit.data.apiIds)
-        if player then
-            TriggerClientEvent('sonorancad:livemap:firstSpawn', player, true)
-            TriggerClientEvent('SonoranCAD::pushevents:UnitLogin', player, unit)
-            TriggerClientEvent("SonoranCAD::livemap:ReturnPlayerTrackStatus", player, true)
-            TriggerClientEvent("SonoranCAD::livemap:UnitAdd", player, unit)
-        else
-            debugLog("Unable to find API ID? Got: "..json.encode(unit))
+        print(("player: %s - ids: %s - status: %s - Track: %s"):format(player, unit.data.apiIds, status, TrackedPlayers[player]))
+        if player and TrackedPlayers[player] ~= nil then
+            local unit = TrackedPlayers[player]
+            unit.status = status
+            TriggerClientEvent("SonoranCAD::livemap:UpdatePlayer", player, unit)
         end
-    end)
-
-    RegisterServerEvent('SonoranCAD::pushevents:UnitLogout')
-    AddEventHandler('SonoranCAD::pushevents:UnitLogout', function(id)
-        local targetPlayer = GetUnitById(id)
-        if targetPlayer then
-            TriggerClientEvent('sonorancad:livemap:firstSpawn', targetPlayer, true)
-        else
-            debugLog("Unknown unit in logout event")
-        end
-    end)
-
-    AddEventHandler("SonoranCAD::core:AddPlayer", function(playerId, unit)
-        TriggerClientEvent("SonoranCAD::livemap:PlayerIsTracked", playerId, true)
-        TriggerClientEvent('sonorancad:livemap:firstSpawn', playerId, true)
-    end)
-
-    AddEventHandler("SonoranCAD::core:RemovePlayer", function(playerId, unit)
-        TriggerClientEvent("SonoranCAD::livemap:PlayerIsTracked", playerId, false)
-        TriggerClientEvent('sonorancad:livemap:firstSpawn', playerId, true)
     end)
 end

@@ -23,180 +23,89 @@ along with this program in the file "LICENSE".  If not, see <http://www.gnu.org/
 local pluginConfig = Config.GetPluginConfig("livemap")
 
 if pluginConfig.enabled then
-    local firstSpawn = true
-    isCallerForEmergency = false
-    local playerBlipData = {}
-    local standalonePlayerBlipData = {
-        ["pos"] = { x=0, y=0, z=0 },
-        ["icon"] = 6, -- Curent player blip id
-        ["name"] = "NOT SET"
+
+    RegisterNetEvent("SonoranCAD::livemap:AddPlayer")
+    RegisterNetEvent("SonoranCAD::livemap:RemovePlayer")
+    RegisterNetEvent("SonoranCAD::livemap:UpdatePlayer")
+
+    local playerData = {
+        ["pos"] = { x=0,y=0,z=0 },
+        ["icon"] = 6,
+        ["name"] = GetPlayerName(PlayerId(-1)),
+        ["status"] = nil,
+        ["unitNumber"] = nil,
+        ["department"] = nil,
+        ["subdivision"] = nil,
+        ["assignment"] = nil
     }
-    local esxPlayerBlipData = {
-        ["pos"] = { x=0, y=0, z=0 },
-        ["icon"] = 6, -- Curent player blip id
-        ["name"] = "NOT SET",
-        ["Unit Number"] = "0",
-        ["Status"] = "UNAVAILABLE"
+
+    local lastSentData = {
+        ["pos"] = { x=0,y=0,z=0 },
+        ["icon"] = 6,
+        ["name"] = nil,
+        ["status"] = nil,
+        ["unitNumber"] = nil,
+        ["department"] = nil,
+        ["subdivision"] = nil,
+        ["assignment"] = nil
     }
 
-    -- Table to keep track of the updated data
-    local beenUpdated =  {}
-    -- Update the data and queue the key to be updated on the websocket server
-    function updateData(name, value)
-        debugLog(("[livemap] updateData %s = %s"):format(name, value))
-        table.insert(beenUpdated, name)
-        playerBlipData[name] = value
-    end
+    local sendUpdates = false
 
-    -- Event to recieve requested IsTracked status
-    local IsTracked = nil
-    RegisterNetEvent("SonoranCAD::livemap:PlayerIsTracked")
-    AddEventHandler("SonoranCAD::livemap:PlayerIsTracked", function(status)
-        debugLog("Tracked status: "..tostring(status))
-        IsTracked = status
-    end)
-
-    local function IsTrackedUnit()
-        return IsTracked
-    end
-
-    -- Listener event to update data on the websocket server with data from SonoranCAD
-    RegisterNetEvent('SonoranCAD::pushevents:UnitUpdate')
-    AddEventHandler('SonoranCAD::pushevents:UnitUpdate', function(unit)
-        -- check for changes in the data from the last set value and update changes
-        local unitDetail = unit.data
-        if playerBlipData['unitNum'] ~= unitDetail.unitNum then
-            updateData('Unit Number', unitDetail.unitNum)
-        end
-        if playerBlipData['status'] ~= unit.status then
-            local label = Config.statusLabels[unit.status + 1]
-            updateData('Status', label)
-        end
-        if playerBlipData['name'] ~= unitDetail.name then
-            updateData('Name', unitDetail.name)
-        end
-        if playerBlipData['department'] ~= unitDetail.department then
-            updateData('Department', unitDetail.department)
-        end
-
-        -- As mentioned in the API documentation data.callStatus is not always sent, only when it is changed. This will only update when it is sent
-        if unit.callStatus ~= '' and playerBlipData['Call Assignment'] ~= nil then
-            if playerBlipData['Call Assignment'] ~= unit.callStatus then
-                updateData('Call Assignment', unit.callStatus)
-            end
-        end
-    end)
-
-    --[[
-        When the player spawns, make sure we set their ID in the data that is going
-        to be sent via sockets. Wait for the server to send framwork integration data
-        and configuration necessary to initialize the livemap integration.
-    ]]
-    
-    function TriggerFirstSpawn(jobTriggered)
-        print("in first spawn "..tostring(jobTriggered))
-        -- only run when first spawned into the world or when job is changed in the framework integration
-        if firstSpawn then
-            debugLog("Initalizing player blip...")
-            if isPluginLoaded('esxsupport') then
-                playerBlipData = esxPlayerBlipData
-                Wait(1000) -- wait for ESX
-            else
-                playerBlipData = standalonePlayerBlipData
-            end
-            -- In framwork integration mode, check if player is a tracked job type as configured in config.json
-            -- This limits only tracked jobs to be displayed on the livemap when in framework integrated mode
-            if IsTrackedUnit() then
-                TriggerServerEvent("sonorancad:livemap:playerSpawned") -- Set's the ID in "playerData" so it will get sent via sockets
-                -- Now send the default data set
-                for key,val in pairs(playerBlipData) do
-                    TriggerServerEvent("sonorancad:livemap:AddPlayerData", key, val)
-                end
-            end
-            -- Set inital name if steamHex is not defined in SonoranCAD
-            if isPluginLoaded('esxsupport') then
-                GetIdentity(function(esxIdentity)
-                    if esxIdentity ~= nil then
-                        if esxIdentity.firstName ~= nil and esxIdentity.lastName ~= nil then
-                            updateData("name", (esxIdentity.firstName or "")..' '..(esxIdentity.lastName) or "")
-                        elseif esxIdentity.name ~= nil then
-                            updateData("name", esxIdentity.name)
-                        else
-                            print(("name failed: %s %s"):format(esxIdentity.firstName, esxIdentity.lastName))
-                            updateData("name", GetPlayerName(PlayerId()))
-                        end
-                    else
-                        debugLog("Failed to get ESX identity, falling back to name")
-                        updateData("name", GetPlayerName(PlayerId()))
-                    end
-                end)
-            else
-                updateData("name", GetPlayerName(PlayerId()))
-            end
-
-            firstSpawn = false
-            debugLog("Player blip initialized")
-            Citizen.Wait(100)
-        else
-            -- Allow framework job changes to reset player's blip and recheck if they should be checked, useful for duty scripts and character changes
-            if jobTriggered then
-                TriggerServerEvent('sonorancad:livemap:RemovePlayer')
-                firstSpawn = true
-                TriggerFirstSpawn(jobTriggered)
-            end
-        end
-    end
-
-    RegisterNetEvent("SonoranCAD::livemap:UnitAdd")
-    AddEventHandler("SonoranCAD::livemap:UnitAdd", function(data)
-        TriggerServerEvent("sonorancad:livemap:playerSpawned")
-        local unitDetail = data.data
-        if playerBlipData['unitNum'] ~= unitDetail.unitNum then
-            updateData('Unit Number', unitDetail.unitNum)
-        end
-        if playerBlipData['status'] ~= data.status then
-            local label = Config.statusLabels[data.status + 1]
-            updateData('Status', label)
-        end
-        if playerBlipData['name'] ~= unitDetail.name then
-            updateData('name', unitDetail.name)
-        end
-        if playerBlipData['department'] ~= unitDetail.department then
-            updateData('Department', unitDetail.department)
-        end
-        if playerBlipData['subdivision'] ~= unitDetail.subdivision then
-            updateData('subdivision', unitDetail.subdivision)
-        end
-
-        -- As mentioned in the API documentation data.callStatus is not always sent, only when it is changed. This will only update when it is sent
-        if unitDetail.callStatus ~= '' then
-            if playerBlipData['Call Assignment'] ~= unitDetail.callStatus then
-                updateData('Call Assignment', unitDetail.callStatus)
-            end
-        end
-
-        for key,val in pairs(playerBlipData) do
-            TriggerServerEvent("sonorancad:livemap:AddPlayerData", key, val)
-        end
-        firstSpawn = true
-        TriggerFirstSpawn(false)
-    end)
-
-    -- Listener event for inital player spawn
     CreateThread(function()
-        while not NetworkIsPlayerActive(PlayerId()) do
+        while not NetworkIsPlayerActive(PlayerId(-1)) do
             Wait(10)
         end
-        TriggerFirstSpawn(false)
+        Wait(1000)
+        if isPluginLoaded('esxsupport') then
+            GetIdentity(function(esxIdentity)
+                if esxIdentity ~= nil then
+                    if esxIdentity.firstName ~= nil and esxIdentity.lastName ~= nil then
+                        playerData.name = (esxIdentity.firstName or "")..' '..(esxIdentity.lastName) or ""
+                    elseif esxIdentity.name ~= nil then
+                        playerData.name = esxIdentity.name
+                    end
+                end
+            end)
+        end
     end)
-    -- Listener event to allow for framwork jobs to refresh player blip
-    RegisterNetEvent("sonorancad:livemap:firstSpawn")
-    AddEventHandler("sonorancad:livemap:firstSpawn", function(jobTriggered)
-        TriggerFirstSpawn(jobTriggered)
+
+    AddEventHandler("SonoranCAD::livemap:AddPlayer", function(unit)
+        debugLog("[livemap] Adding to map: "..json.encode(unit))
+        if unit.id > 0 then
+            local u = unit.data
+            playerData.status = Config.statusLabels[unit.status + 1]
+            playerData.unitNumber = u.unitNum
+            playerData.department = u.department
+            playerData.subdivision = u.subdivision ~= "" and u.subdivision or nil
+            if pluginConfig.useCadName then
+                playerData.name = u.name
+            end
+        end
+        TriggerServerEvent("sonorancad:livemap:playerSpawned")
+        sendUpdates = true
+    end)
+    
+    AddEventHandler("SonoranCAD::livemap:RemovePlayer", function()
+        debugLog("[livemap] No longer tracking")
+        sendUpdates = false
+        lastSentData = {}
+        TriggerServerEvent("sonorancad:livemap:RemovePlayer")
+    end)
+
+    AddEventHandler("SonoranCAD::livemap:UpdatePlayer", function(unit)
+        local u = unit.data
+        playerData.status = Config.statusLabels[unit.status + 1]
+        playerData.unitNumber = u.unitNum
+        playerData.department = u.department
+        playerData.subdivision = u.subdivision ~= "" and u.subdivision or nil
+        if pluginConfig.useCadName then
+            playerData.name = u.name
+        end
     end)
 
     -- Function to change live map icons based on type of vehicle player is in, does not take in account addon/dlc vehicles
-    function doIconUpdate()
+    local function doIconUpdate()
         local ped = PlayerPedId()
         local newSprite = 6 -- Default to the player one
 
@@ -242,65 +151,40 @@ if pluginConfig.enabled then
             end
         end
         -- Only update icon if there is a change
-        if playerBlipData["icon"] ~= newSprite then
-            updateData("icon", newSprite)
+        if playerData["icon"] ~= newSprite then
+            playerData["icon"] = newSprite
         end
     end
 
-    ---------------------------------------------------------------------------
-    -- Main thread that checks for data updates and updates server
-    ---------------------------------------------------------------------------
-    local livemapDebug = false
     Citizen.CreateThread(function()
-        while not Config.primaryIdentifier do
+        local isFirstRun = true
+        while not Config.primaryIdentifier or not NetworkIsPlayerActive(PlayerId()) do
             Wait(10)
         end
         while true do
             Citizen.Wait(1000)
-            -- Only run if firstSpawn is not running
-            if NetworkIsPlayerActive(PlayerId()) and not firstSpawn then
-                -- Only run if player is in a framwork tracked job, track all players if in standalone mode
-                if IsTrackedUnit() then
-                    -- Update position, if it has changed
-                    local x,y,z = table.unpack(GetEntityCoords(PlayerPedId()))
-                    local x1,y1,z1 = playerBlipData["pos"].x, playerBlipData["pos"].y, playerBlipData["pos"].z
-    
-                    local dist = Vdist(x, y, z, x1, y1, z1)
-    
-                    if (dist >= 5) then
-                        -- Update every 5 meters.. Let's reduce the amount of spam
-                        updateData("pos", {x = x, y=y, z=z})
-                    end
-    
-                    doIconUpdate()
-    
-                    -- Make sure the updated data is up-to-date on socket server as well
-                    for i,k in pairs(beenUpdated) do
-                        --Citizen.Trace("Updating " .. k)
-                        TriggerServerEvent("sonorancad:livemap:UpdatePlayerData", k, playerBlipData[k])
-                        if livemapDebug and playerBlipData[k] ~= nil then
-                            if k == "pos" then
-                                print(("UpdatePlayerData: %s %s"):format(k, json.encode(playerBlipData[k])))
-                            else
-                                print(("UpdatePlayerData: %s %s"):format(k, playerBlipData[k]))
-                            end
+            if sendUpdates then
+                doIconUpdate()
+                local x,y,z = table.unpack(GetEntityCoords(PlayerPedId()))
+                local x1,y1,z1 = 0,0,0
+                if lastSentData["pos"] ~= nil then
+                    x1,y1,z1 = lastSentData["pos"].x, lastSentData["pos"].y, lastSentData["pos"].z
+                end
+                local dist = Vdist(x, y, z, x1, y1, z1)
+                if (dist >= 5) then
+                    playerData.pos = {x = x, y=y, z=z}
+                end
+                for key, value in pairs(playerData) do
+                    if value ~= lastSentData[key] then
+                        local displayName = pluginConfig.infoDisplayNames[key]
+                        if displayName then
+                            TriggerServerEvent("sonorancad:livemap:UpdatePlayerData", displayName, value)
+                            lastSentData[key] = value
                         end
-                        table.remove(beenUpdated, i)
-                    end
-                else
-                    if livemapDebug then
-                        print("not tracked: "..tostring(IsTrackedUnit()))
                     end
                 end
-            else
-                if livemapDebug then
-                    print("firstSpawn: "..tostring(firstSpawn))
-                end
+                isFirstRun = false
             end
         end
-    end)
-    RegisterCommand("livemapdebug", function(source, args, rawCommand)
-        livemapDebug = not livemapDebug
-        print("toggled "..tostring(livemapDebug))
     end)
 end
