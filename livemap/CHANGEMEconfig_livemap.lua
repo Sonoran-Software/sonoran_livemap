@@ -9,6 +9,7 @@ local config = {
     enabled = false,
     pluginName = "livemap", -- name your plugin here
     pluginAuthor = "SonoranCAD", -- author
+    configVersion = "2.0.0",
     -- if the player isn't logged into the CAD, don't show them
     hideNonUnits = true, 
     -- how often to check if units change state

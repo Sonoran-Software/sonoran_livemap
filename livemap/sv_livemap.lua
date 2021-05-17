@@ -23,7 +23,14 @@ if pluginConfig.enabled then
     end 
 
     CreateThread(function()
+        if pluginConfig.refreshTimer == nil then
+            pluginConfig.refreshTimer = 5000
+        end
+        if pluginConfig.hideNonUnits == nil then
+            pluginConfig.hideNonUnits = true
+        end
         while true do
+            
             Wait(pluginConfig.refreshTimer)
             for i=0, GetNumPlayerIndices()-1 do
                 local player = GetPlayerFromIndex(i)
