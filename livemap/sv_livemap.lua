@@ -1,8 +1,10 @@
-local pluginConfig = Config.GetPluginConfig("livemap")
+CreateThread(function() Config.LoadPlugin("livemap", function(pluginConfig)
 
 if pluginConfig.enabled then
 
     local TrackedPlayers = {}
+
+    RegisterCommand("trackedplayers", function() print(json.encode(TrackedPlayers)) end, true)
 
     local function GetSourceByApiId(apiIds)
         if apiIds == nil then return nil end
@@ -30,18 +32,20 @@ if pluginConfig.enabled then
             pluginConfig.hideNonUnits = true
         end
         while true do
-            
             Wait(pluginConfig.refreshTimer)
             for i=0, GetNumPlayerIndices()-1 do
                 local player = GetPlayerFromIndex(i)
                 local unit = GetUnitCache()[GetUnitByPlayerId(player)]
+                debugLog(("idx: %s - player: %s - unit: %s"):format(i, player, unit ~= nil and json.encode(unit) or nil))
                 if unit then
                     if TrackedPlayers[player] == nil then
+                        debugLog(("Add %s to tracking"):format(player))
                         TriggerClientEvent("SonoranCAD::livemap:AddPlayer", player, unit)
                     end
                     TrackedPlayers[player] = unit
                 elseif not pluginConfig.hideNonUnits then
                     if TrackedPlayers[player] == nil then
+                        debugLog(("Add civilian %s to tracking"):format(player))
                         TriggerClientEvent("SonoranCAD::livemap:AddPlayer", player, { id = 0 })
                     end
                     TrackedPlayers[player] = { id = 0 }
@@ -59,7 +63,7 @@ if pluginConfig.enabled then
     RegisterServerEvent('SonoranCAD::pushevents:UnitUpdate')
     AddEventHandler('SonoranCAD::pushevents:UnitUpdate', function(unit, status)
         local player = GetSourceByApiId(unit.data.apiIds)
-        print(("player: %s - ids: %s - status: %s - Track: %s"):format(player, unit.data.apiIds, status, TrackedPlayers[player]))
+        debugLog(("player: %s - ids: %s - status: %s - Track: %s"):format(player, json.encode(unit.data.apiIds), status, TrackedPlayers[player]))
         if player and TrackedPlayers[player] ~= nil then
             local unit = TrackedPlayers[player]
             unit.status = status
@@ -67,3 +71,4 @@ if pluginConfig.enabled then
         end
     end)
 end
+end) end)
