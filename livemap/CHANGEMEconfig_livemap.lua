@@ -19,10 +19,10 @@ local config = {
     -- Use in-CAD name for online units? false uses in-game name or ESX name (if esxsupport plugin is loaded)
     useCadName = true,
     infoDisplayNames = {
-        -- localization, edit the values only
         ["pos"] = "pos",
         ["icon"] = "icon",
         ["name"] = "name",
+        -- localization, edit the values BELOW only (IMPORTANT: DON'T CHANGE THE ABOVE OPTIONS OR MAP WILL BREAK)
         ["status"] = "Status",
         ["unitNumber"] = "Unit Number",
         ["department"] = "Department",
