@@ -35,7 +35,7 @@ if pluginConfig.enabled then
             Wait(pluginConfig.refreshTimer)
             for i=0, GetNumPlayerIndices()-1 do
                 local player = GetPlayerFromIndex(i)
-                local unit = GetUnitCache()[GetUnitByPlayerId(player)]
+                local unit = GetUnitCache()[GetUnitById(GetUnitByPlayerId(player))]
                 debugLog(("idx: %s - player: %s - unit: %s"):format(i, player, unit ~= nil and json.encode(unit) or nil))
                 if unit then
                     if TrackedPlayers[player] == nil then
